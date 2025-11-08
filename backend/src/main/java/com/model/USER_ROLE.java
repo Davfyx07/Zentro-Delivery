@@ -1,0 +1,10 @@
+package com.model;
+
+public enum USER_ROLE {
+    ROLE_CUSTOMER, //ROL CLIENTE
+
+    ROLE_ADMIN, //ROL ADMIN
+
+    ROLE_RESTAURANT_OWNER //ROL PROPIETARIO DE RESTAURANTE
+
+}
