@@ -1,272 +1,171 @@
-# Zentro Restaurant - Food Ordering Platform
+<!--
+  README actualizado: versión  en español
+  - Encabezado como en la imagen de ejemplo (sin porcentajes)
+  - Resumen, tecnologías usadas y planificadas
+  - Instrucciones rápidas de instalación y ejecución
+-->
 
-Full-stack food ordering application with Spring Boot backend and Next.js frontend.
+# ZENTRO-DELIVERY
 
-## 📋 Tech Stack
+_Deliver Excellence, Elevate Every Bite Instantly_
 
-### Backend
-- **Java 21**
-- **Spring Boot 3.5.6**
-- **PostgreSQL 18.0**
-- **JWT Authentication**
-- **Maven**
+<!-- Header tipo tarjeta (imagen/badges similar a la captura, sin porcentajes) -->
 
-### Frontend
-- **Next.js 14** (App Router)
-- **TypeScript**
-- **TailwindCSS**
-- **React 19**
-- **Turbopack**
+<p align="center">
+  <strong style="font-size:2.2rem">ZENTRO-DELIVERY</strong><br>
+  <em>Deliver Excellence, Elevate Every Bite Instantly</em>
+</p>
 
-## 🚀 Prerequisites
+<p align="center">
+  <!-- Badges representativos (sin porcentajes) -->
+  <img alt="Java" src="https://img.shields.io/badge/Java-17%2B-blue?logo=java" />
+  <img alt="Spring Boot" src="https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen?logo=spring" />
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-14-black?logo=next.js" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-blue?logo=typescript" />
+  <img alt="Postgres" src="https://img.shields.io/badge/Postgres-15-blue?logo=postgresql" />
+  <img alt="Tailwind" src="https://img.shields.io/badge/TailwindCSS-3.4.0-blue?logo=tailwindcss" />
+  <img alt="Maven" src="https://img.shields.io/badge/Maven-3.8-orange?logo=apachemaven" />
+  <img alt="JWT" src="https://img.shields.io/badge/JWT-auth-yellow?logo=jsonwebtokens" />
+  <img alt="Axios" src="https://img.shields.io/badge/Axios-0.27-blue?logo=axios" />
+</p>
 
-### System Requirements
-- **Node.js**: v18 or higher
-- **Java**: JDK 21
-- **PostgreSQL**: 18.0 or higher
-- **Maven**: 3.8+ (included via wrapper)
-- **Git**: Latest version
+---
 
-### Installation Links
-- Node.js: https://nodejs.org/
-- Java JDK 21: https://www.oracle.com/java/technologies/downloads/#java21
-- PostgreSQL: https://www.postgresql.org/download/
-- Git: https://git-scm.com/downloads
+## Descripción
 
-## ⚙️ Setup Instructions
+Aplicación full-stack para pedidos de comida: backend en Java + Spring Boot y frontend en Next.js (React + TypeScript). El repositorio contiene código para desplegar y desarrollar la API y la app web (cliente). Este README está en español y resume lo que ya usa el proyecto y lo que se planea integrar.
 
-### 1. Clone Repository
-```bash
-git clone https://github.com/Davfyx07/Zentro-Restaurant.git
-cd Zentro-Restaurant
+## Resumen técnico (actual y planeado)
+
+Tecnologías actuales:
+- Backend: Java 17+ / Spring Boot, Maven, JWT, JPA/Hibernate
+- Base de datos: PostgreSQL
+- Frontend: Next.js (App Router), React, TypeScript, TailwindCSS
+- Herramientas: ESLint, Axios, Turbopack (dev), npm
+
+Tecnologías/planteamientos a usar o considerar:
+- Docker y docker-compose para desarrollo y despliegue
+- CI/CD (GitHub Actions) para pruebas y deploy automático
+- Redis (cache / sesiones) y RabbitMQ (cola de procesos) si hacen falta
+- Monitoreo básico (Prometheus / Grafana) y logging centralizado
+
+## Vista rápida: ejecutar localmente
+
+Siguientes instrucciones asumen que estás en Windows (PowerShell). Ajusta comandos para Linux/macOS si hace falta.
+
+1) Clona el repositorio
+
+```powershell
+git clone https://github.com/Davfyx07/Zentro-Delivery.git
+cd Zentro-Delivery
 ```
 
-### 2. Backend Setup
+2) Backend (Spring Boot)
 
-#### Configure Database
-1. Create PostgreSQL database:
-```sql
-CREATE DATABASE zentro_restaurant;
-```
+- Configura la base de datos PostgreSQL y actualiza `backend/src/main/resources/application.properties` o usa variables de entorno.
 
-2. Update `backend/src/main/resources/application.properties`:
+Ejemplo mínimo en `application.properties`:
+
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/zentro_restaurant
 spring.datasource.username=postgres
-spring.datasource.password=YOUR_PASSWORD
-```
-
-#### Run Backend
-```bash
-cd backend
-# Windows
-mvnw.cmd spring-boot:run
-
-# Linux/Mac
-./mvnw spring-boot:run
-```
-
-Backend runs on: **http://localhost:8080**
-
-### 3. Frontend Setup
-
-#### Install Dependencies
-```bash
-cd frontend
-npm install
-```
-
-#### Run Development Server
-```bash
-npm run dev
-```
-
-Frontend runs on: **http://localhost:3000**
-
-## 📦 Dependencies
-
-### Backend Dependencies
-See `backend/pom.xml` for complete list. Main dependencies:
-- Spring Boot Starter Web
-- Spring Boot Starter Data JPA
-- Spring Boot Starter Security
-- PostgreSQL Driver
-- JWT (jjwt) 0.11.5
-- Lombok
-- Hibernate
-
-### Frontend Dependencies
-```json
-{
-  "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "next": "^15.0.0"
-  },
-  "devDependencies": {
-    "typescript": "^5",
-    "tailwindcss": "^3.4.1",
-    "postcss": "^8",
-    "autoprefixer": "^10.0.1",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^8",
-    "eslint-config-next": "15.0.0"
-  }
-}
-```
-
-### Optional Frontend Additions
-```bash
-# Material-UI (if following MUI tutorial)
-npm install @mui/material @emotion/react @emotion/styled @mui/icons-material
-
-# OR shadcn/ui (modern alternative)
-npx shadcn@latest init
-
-# Axios for API calls
-npm install axios
-
-# React Query for data fetching
-npm install @tanstack/react-query
-
-# State management
-npm install zustand
-```
-
-## 🗂️ Project Structure
-
-```
-Zentro-Restaurant/
-├── backend/                    # Spring Boot API
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/
-│   │   │   │   ├── config/    # Security, JWT config
-│   │   │   │   ├── controller/# REST endpoints
-│   │   │   │   ├── model/     # JPA entities
-│   │   │   │   ├── repository/# Data access
-│   │   │   │   ├── service/   # Business logic
-│   │   │   │   └── request/   # DTOs
-│   │   │   └── resources/
-│   │   │       └── application.properties
-│   │   └── test/
-│   ├── pom.xml
-│   └── mvnw.cmd
-│
-└── frontend/                   # Next.js App
-    ├── src/
-    │   ├── app/               # App Router pages
-    │   ├── components/        # React components
-    │   └── lib/              # Utils, API clients
-    ├── public/               # Static files
-    ├── package.json
-    └── next.config.ts
-
-```
-
-## 🔐 Environment Variables
-
-### Backend
-Create `backend/src/main/resources/application.properties`:
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/zentro_restaurant
-spring.datasource.username=postgres
-spring.datasource.password=YOUR_PASSWORD
+spring.datasource.password=TU_PASSWORD
 spring.jpa.hibernate.ddl-auto=update
 server.port=8080
 ```
 
-### Frontend
-Create `frontend/.env.local`:
+Para ejecutar en desarrollo (desde la raíz del repo):
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run
+```
+
+La API quedará en: http://localhost:8080
+
+3) Frontend (Next.js)
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+La app de cliente queda en: http://localhost:3000
+
+Variables de entorno recomendadas (archivo `frontend/.env.local`):
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8080
 ```
 
-## 📝 Available Scripts
+## Estructura principal del proyecto
 
-### Backend
-```bash
-mvnw.cmd spring-boot:run    # Run development server
-mvnw.cmd clean install      # Build project
-mvnw.cmd test              # Run tests
-```
+`/backend` - Spring Boot API (controladores, servicios, repositorios, seguridad JWT)
 
-### Frontend
-```bash
-npm run dev        # Development server (with Turbopack)
-npm run build      # Production build
-npm run start      # Start production server
-npm run lint       # Run ESLint
-```
+`/frontend` - Next.js app (app router, componentes, hooks, estilos)
 
-## 🌐 API Endpoints
+Revisa las carpetas `src/main/java/com/...` y `frontend/src` para más detalles.
 
-### Authentication
-- POST `/auth/signup` - Register new user
-- POST `/auth/signin` - Login user
+## Endpoints principales (resumen)
 
-### Restaurants
-- GET `/api/restaurants` - Get all restaurants
-- GET `/api/restaurants/{id}` - Get restaurant by ID
-- POST `/api/admin/restaurants` - Create restaurant (Admin)
-- PUT `/api/admin/restaurants/{id}` - Update restaurant (Admin)
+- Autenticación: `/auth/signup`, `/auth/signin`
+- Restaurantes: `/api/restaurants`, `/api/restaurants/{id}`
+- Comida: `/api/food/restaurant/{id}`
+- Carrito: `/api/cart`, `/api/cart/add`, `/api/cart-item/{id}/remove`
+- Pedidos: `/api/order`, `/api/order/user`, endpoints admin para gestión
 
-### Food
-- GET `/api/food/restaurant/{id}` - Get restaurant food
-- POST `/api/admin/food` - Create food item (Admin)
-- PUT `/api/admin/food/{id}` - Update food availability (Admin)
+> Nota: La API completa y rutas exactas están en los controladores dentro de `backend/src/main/java`.
 
-### Cart
-- GET `/api/cart` - Get user cart
-- PUT `/api/cart/add` - Add item to cart
-- PUT `/api/cart-item/update` - Update cart item
-- DELETE `/api/cart-item/{id}/remove` - Remove cart item
+## Scripts útiles
 
-### Orders
-- POST `/api/order` - Create order
-- GET `/api/order/user` - Get user orders
-- GET `/api/admin/order/restaurant/{id}` - Get restaurant orders (Admin)
-- PUT `/api/admin/order/{id}/{status}` - Update order status (Admin)
+Backend (PowerShell):
 
-## 🧪 Testing
-
-### Backend
-```bash
+```powershell
 cd backend
-mvnw.cmd test
+.\mvnw.cmd spring-boot:run     # ejecutar en dev
+.\mvnw.cmd clean package       # compilar empaquetar
+.\mvnw.cmd test                # ejecutar tests
 ```
 
-### Frontend
-```bash
+Frontend:
+
+```powershell
 cd frontend
-npm run test
+npm run dev     # desarrollo
+npm run build   # build producción
+npm run start   # iniciar prod
+npm run lint    # lint
 ```
 
-## 🚀 Deployment
+## Recomendaciones rápidas
 
-### Backend
-- Railway: https://railway.app/
-- Render: https://render.com/
-- Heroku: https://heroku.com/
+- Añadir `docker-compose` con servicios: app, db (postgres), redis (opcional).
+- Añadir GitHub Actions para build/test en cada PR.
+- Mantener las variables sensibles fuera del repo (usar `.env` o secretos del proveedor).
 
-### Frontend
-- Vercel: https://vercel.com/ (Recommended)
-- Netlify: https://netlify.com/
+## Cómo contribuir
 
-## 📚 Resources
+1. Crea una rama: `git checkout -b feature/mi-cambio`
+2. Haz commits claros y pequeños
+3. Abre PR hacia `main` y describe el cambio
 
-- Next.js Docs: https://nextjs.org/docs
-- Spring Boot Docs: https://spring.io/projects/spring-boot
-- TailwindCSS: https://tailwindcss.com/docs
-- PostgreSQL Docs: https://www.postgresql.org/docs/
+## Recursos
 
-## 👤 Author
+- Next.js: https://nextjs.org/docs
+- Spring Boot: https://spring.io/projects/spring-boot
+- PostgreSQL: https://www.postgresql.org/
+- TailwindCSS: https://tailwindcss.com/
 
-**Davfyx07**
-- GitHub: [@Davfyx07](https://github.com/Davfyx07)
+---
 
-## 📄 License
+Si quieres, puedo además:
+- añadir un `docker-compose.yml` básico para la base de datos y la app
+- generar un `README` en inglés adicional o una versión corta para el README principal
 
-This project is for portfolio purposes.
+¿Quieres que agregue el `docker-compose` ahora? 
+
+---
+
+© Davfyx07
+
