@@ -1,8 +1,18 @@
 "use client"
 
 import { useState } from "react"
-import { X, ShoppingCart } from "lucide-react"
+import { ShoppingCart, Minus, Plus } from "lucide-react"
 import { useCart } from "@/hooks/use-cart"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 
 interface MenuItem {
   id: string
@@ -72,78 +82,82 @@ export function MenuModal({ isOpen, onClose, restaurantId, restaurantName, items
   }
 
   return (
-    <>
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center" onClick={onClose}>
-          <div
-            className="bg-white dark:bg-gray-900 rounded-2xl max-w-2xl w-full max-h-96 overflow-y-auto m-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="sticky top-0 flex items-center justify-between p-6 border-b border-border dark:border-gray-700 bg-white dark:bg-gray-900">
-              <h2 className="text-2xl font-bold text-foreground dark:text-white">{restaurantName}</h2>
-              <button onClick={onClose} className="p-2 hover:bg-muted dark:hover:bg-gray-800 rounded-lg transition-colors">
-                <X className="w-5 h-5 dark:text-white" />
-              </button>
-            </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-2xl">{restaurantName}</DialogTitle>
+          <DialogDescription>
+            Selecciona los platillos que deseas agregar a tu carrito
+          </DialogDescription>
+        </DialogHeader>
 
-            {/* Menu Items */}
-            <div className="p-6 space-y-4">
-              {menuItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex gap-4 p-4 border border-border dark:border-gray-700 rounded-lg hover:bg-muted/30 dark:hover:bg-gray-800/30 transition-colors"
-                >
-                  <img
-                    src={item.image || "/placeholder.svg"}
-                    alt={item.name}
-                    className="w-24 h-24 rounded-lg object-cover"
-                  />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-foreground dark:text-white">{item.name}</h3>
-                    <p className="text-sm text-muted-foreground dark:text-gray-400">{item.description}</p>
-                    <div className="flex items-center justify-between mt-3">
-                      <span className="text-lg font-bold text-primary">${item.price.toFixed(2)}</span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() =>
-                            setQuantities({
-                              ...quantities,
-                              [item.id]: Math.max(1, (quantities[item.id] || 1) - 1),
-                            })
-                          }
-                          className="px-2 py-1 bg-muted dark:bg-gray-800 rounded hover:bg-muted/80 dark:hover:bg-gray-700 dark:text-white"
-                        >
-                          -
-                        </button>
-                        <span className="w-8 text-center font-semibold dark:text-white">{quantities[item.id] || 1}</span>
-                        <button
-                          onClick={() =>
-                            setQuantities({
-                              ...quantities,
-                              [item.id]: (quantities[item.id] || 1) + 1,
-                            })
-                          }
-                          className="px-2 py-1 bg-muted dark:bg-gray-800 rounded hover:bg-muted/80 dark:hover:bg-gray-700 dark:text-white"
-                        >
-                          +
-                        </button>
-                        <button
-                          onClick={() => handleAddToCart(item)}
-                          className="ml-4 flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-secondary transition-colors"
-                        >
-                          <ShoppingCart className="w-4 h-4" />
-                          Agregar
-                        </button>
-                      </div>
-                    </div>
+        <Separator className="my-4" />
+
+        {/* Menu Items */}
+        <div className="space-y-4 pb-4">
+          {menuItems.map((item) => (
+            <div
+              key={item.id}
+              className="flex gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+            >
+              <img
+                src={item.image || "/placeholder.svg"}
+                alt={item.name}
+                className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-lg">{item.name}</h3>
+                <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+                <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
+                  <Badge variant="secondary" className="text-base px-3 py-1">
+                    ${item.price.toFixed(2)}
+                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() =>
+                        setQuantities({
+                          ...quantities,
+                          [item.id]: Math.max(1, (quantities[item.id] || 1) - 1),
+                        })
+                      }
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <span className="w-8 text-center font-semibold">{quantities[item.id] || 1}</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() =>
+                        setQuantities({
+                          ...quantities,
+                          [item.id]: (quantities[item.id] || 1) + 1,
+                        })
+                      }
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => handleAddToCart(item)}
+                      className="ml-2"
+                      size="sm"
+                    >
+                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      Agregar
+                    </Button>
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
+          ))}
         </div>
-      )}
-    </>
+      </DialogContent>
+    </Dialog>
   )
 }

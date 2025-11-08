@@ -6,11 +6,16 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 import Link from "next/link"
-import { Mail, Lock, User, AlertCircle, CheckCircle, ArrowLeft, Sparkles, Shield, Zap, EyeOff, Eye } from "lucide-react"
+import { Mail, Lock, User, AlertCircle, CheckCircle, ArrowLeft, Sparkles, Shield, Zap, Eye, EyeOff } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { GoogleSignInButton } from "@/components/google-sign-in-button"
+import axios from "axios"
 
 export default function SignupPage() {
   const router = useRouter()
-  const { signup } = useAuth()
+  const { setUser } = useAuth()
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -30,7 +35,7 @@ export default function SignupPage() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setSuccess(false)
@@ -61,18 +66,39 @@ export default function SignupPage() {
       return
     }
 
-    const success = signup(formData.email, formData.password, formData.name)
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/signup`,
+        {
+          fullName: formData.name,
+          email: formData.email,
+          password: formData.password,
+          role: "ROLE_CUSTOMER",
+        }
+      )
 
-    if (success) {
+      // Guardar JWT
+      localStorage.setItem("zentro_jwt", response.data.jwt)
+
+      // Actualizar el estado de usuario
+      setUser({
+        id: formData.email,
+        email: formData.email,
+        name: formData.name,
+        role: response.data.role === "ROLE_CUSTOMER" ? "customer" : "owner",
+        createdAt: new Date().toISOString(),
+      })
+
       setSuccess(true)
       setTimeout(() => {
         router.push("/")
-      }, 2000)
-    } else {
-      setError("Este email ya está registrado")
+      }, 1500)
+    } catch (error: any) {
+      console.error("Error en registro:", error)
+      setError(error.response?.data?.message || "Este email ya está registrado")
+    } finally {
+      setIsLoading(false)
     }
-
-    setIsLoading(false)
   }
 
   return (
@@ -174,121 +200,133 @@ export default function SignupPage() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-3.5">
               {/* Name Input */}
-              <div>
-                <label htmlFor="name" className="block text-sm font-semibold text-foreground dark:text-white mb-1.5">
-                  Nombre Completo
-                </label>
+              <div className="space-y-1.5">
+                <Label htmlFor="name">Nombre Completo</Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground dark:text-gray-400" />
-                  <input
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
                     type="text"
                     id="name"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="Juan Pérez"
-                    className="w-full pl-11 pr-4 py-2.5 rounded-xl border-2 border-border dark:border-gray-700 bg-background dark:bg-gray-800 text-foreground dark:text-white placeholder-muted-foreground dark:placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="pl-10"
                   />
                 </div>
               </div>
 
               {/* Email Input */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-foreground dark:text-white mb-1.5">
-                  Correo Electrónico
-                </label>
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Correo Electrónico</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground dark:text-gray-400" />
-                  <input
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
                     type="email"
                     id="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="tu@email.com"
-                    className="w-full pl-11 pr-4 py-2.5 rounded-xl border-2 border-border dark:border-gray-700 bg-background dark:bg-gray-800 text-foreground dark:text-white placeholder-muted-foreground dark:placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="pl-10"
                   />
                 </div>
               </div>
 
               {/* Password Input */}
-              <div>
-                <label htmlFor="password" className="block text-sm font-semibold text-foreground dark:text-white mb-1.5">
-                  Contraseña
-                </label>
+              <div className="space-y-1.5">
+                <Label htmlFor="password">Contraseña</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground dark:text-gray-400" />
-                  <input
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
                     type={showPassword ? "text" : "password"}
                     id="password"
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="••••••••"
-                    className="w-full pl-11 pr-12 py-2.5 rounded-xl border-2 border-border dark:border-gray-700 bg-background dark:bg-gray-800 text-foreground dark:text-white placeholder-muted-foreground dark:placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="pl-10 pr-10"
                   />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-gray-400 hover:text-primary transition-colors"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
-                </button>                  
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="w-4 h-4 text-muted-foreground" />
+                    )}
+                  </Button>
                 </div>
               </div>
 
               {/* Confirm Password Input */}
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-semibold text-foreground dark:text-white mb-1.5">
-                  Confirmar Contraseña
-                </label>
+              <div className="space-y-1.5">
+                <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground dark:text-gray-400" />
-                  <input
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
                     type={showPassword ? "text" : "password"}
                     id="confirmPassword"
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder="••••••••"
-                    className="w-full pl-11 pr-12 py-2.5 rounded-xl border-2 border-border dark:border-gray-700 bg-background dark:bg-gray-800 text-foreground dark:text-white placeholder-muted-foreground dark:placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="pl-10 pr-10"
                   />
-
-                  <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-gray-400 hover:text-primary transition-colors"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
-                </button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="w-4 h-4 text-muted-foreground" />
+                    )}
+                  </Button>
                 </div>
               </div>
 
               {/* Error Message */}
               {error && (
-                <div className="flex items-center gap-2 p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                  <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+                <div className="flex items-center gap-2 p-2.5 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
+                  <p className="text-sm text-destructive">{error}</p>
                 </div>
               )}
 
               {/* Submit Button */}
-              <button
+              <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-2.5 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+                className="w-full mt-4"
               >
                 {isLoading ? "Creando cuenta..." : "Crear Cuenta"}
-              </button>
+              </Button>
             </form>
+          )}
+
+          {/* Divider */}
+          {!success && (
+            <>
+              <div className="my-5 flex items-center gap-3">
+                <div className="flex-1 h-px bg-border dark:bg-gray-700"></div>
+                <span className="text-xs text-muted-foreground dark:text-gray-500 font-medium">O continúa con</span>
+                <div className="flex-1 h-px bg-border dark:bg-gray-700"></div>
+              </div>
+
+              {/* Google Sign In Button */}
+              <GoogleSignInButton 
+                onSuccess={() => router.push("/")}
+                onError={(error) => setError(error)}
+              />
+            </>
           )}
 
           {/* Login Link */}

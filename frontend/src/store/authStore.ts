@@ -1,12 +1,23 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+interface User {
+  id: string
+  email: string
+  name: string
+  role: 'customer' | 'owner' | 'admin'
+  profileImage?: string
+  address?: string
+}
+
 interface AuthState {
-  user: any | null
+  user: User | null
   token: string | null
   isAuthenticated: boolean
-  login: (token: string, user: any) => void
+  login: (token: string, user: User) => void
   logout: () => void
+  updateProfileImage: (imageUrl: string) => void
+  updateUser: (userData: Partial<User>) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -22,6 +33,16 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         localStorage.removeItem('jwt')
         set({ token: null, user: null, isAuthenticated: false })
+      },
+      updateProfileImage: (imageUrl) => {
+        set((state) => ({
+          user: state.user ? { ...state.user, profileImage: imageUrl } : null
+        }))
+      },
+      updateUser: (userData) => {
+        set((state) => ({
+          user: state.user ? { ...state.user, ...userData } : null
+        }))
       },
     }),
     {

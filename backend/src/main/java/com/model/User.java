@@ -38,6 +38,15 @@ public class User {
 
     private USER_ROLE role= USER_ROLE.ROLE_CUSTOMER;
 
+    // OAuth fields
+    private String provider = "LOCAL";        // "LOCAL" o "GOOGLE"
+    private String providerId;                // ID de Google si viene de OAuth
+    
+    // Profile fields
+    private String profileImage;              // URL de la foto de perfil
+    private String phoneNumber;               // Teléfono del usuario
+    private String address;                   // Dirección principal (texto simple)
+
     @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "customer", orphanRemoval = true)
     private List<Order> orders = new ArrayList<>();

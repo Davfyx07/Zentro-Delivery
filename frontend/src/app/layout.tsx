@@ -4,6 +4,8 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { ConditionalNavbar } from "@/components/conditional-navbar"
 import { ThemeProvider } from "@/providers/theme-provider"
+import { GoogleOAuthProvider } from "@react-oauth/google"
+import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -37,14 +39,19 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <ConditionalNavbar />
-          {children}
-          <Analytics />
-        </ThemeProvider>
+        <GoogleOAuthProvider clientId={googleClientId}>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            <ConditionalNavbar />
+            {children}
+            <Toaster />
+            <Analytics />
+          </ThemeProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   )

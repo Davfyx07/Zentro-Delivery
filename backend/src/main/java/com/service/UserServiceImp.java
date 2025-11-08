@@ -34,4 +34,9 @@ public class UserServiceImp implements UserService {
         return user;
     }
 
+    @Override
+    public User updateUser(User user) throws Exception {
+        return userRepository.save(user);
+    }
+
 }

@@ -7,8 +7,10 @@ export interface User {
   id: string
   email: string
   name: string
+  role?: "customer" | "owner" | "admin"
   phone?: string
   address?: string
+  profileImage?: string
   createdAt: string
 }
 
@@ -19,6 +21,8 @@ export interface AuthState {
   signup: (email: string, password: string, name: string) => boolean
   logout: () => void
   updateProfile: (data: Partial<User>) => void
+  updateProfileImage: (imageUrl: string) => void
+  setUser: (user: User) => void
 }
 
 // Simulated users database (persisted in localStorage)
@@ -59,6 +63,7 @@ export const useAuth = create<AuthState>()(
           id: Math.random().toString(36).substr(2, 9),
           email,
           name,
+          role: "customer",
           createdAt: new Date().toISOString(),
         }
 
@@ -84,6 +89,24 @@ export const useAuth = create<AuthState>()(
 
           return { user: updatedUser }
         })
+      },
+      updateProfileImage: (imageUrl: string) => {
+        set((state) => {
+          if (!state.user) return state
+          const updatedUser = { ...state.user, profileImage: imageUrl }
+
+          // Update in storage
+          const users = getStoredUsers()
+          if (users[state.user.email]) {
+            users[state.user.email].user = updatedUser
+            saveStoredUsers(users)
+          }
+
+          return { user: updatedUser }
+        })
+      },
+      setUser: (user: User) => {
+        set({ user })
       },
     }),
     {

@@ -8,15 +8,18 @@ import { useRouter } from "next/navigation"
 import { useCart } from "@/hooks/use-cart"
 import { CartSidebar } from "./cart-sidebar"
 import { ThemeToggle } from "./theme-toggle"
+import { UserAvatar } from "./user-avatar"
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const { user, logout } = useAuth()
-  const { getItemCount } = useCart()
-  const [itemCount, setItemCount] = useState(0)
+  const { items } = useCart()
   const router = useRouter()
+
+  // Calculate item count directly from items
+  const itemCount = items.reduce((count, item) => count + item.quantity, 0)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,10 +28,6 @@ export function Navbar() {
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
-
-  useEffect(() => {
-    setItemCount(getItemCount())
-  }, [getItemCount])
 
   const handleLogout = () => {
     logout()
@@ -90,10 +89,14 @@ export function Navbar() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleUserClick}
-                  className="p-2 hover:bg-muted dark:hover:bg-gray-800 rounded-full transition-colors text-foreground dark:text-white"
+                  className="hover:opacity-80 transition-opacity"
                   title="Mi perfil"
                 >
-                  <User className="w-5 h-5" />
+                  <UserAvatar 
+                    image={user.profileImage} 
+                    name={user.name} 
+                    size="md" 
+                  />
                 </button>
                 <button
                   onClick={handleLogout}
@@ -141,9 +144,16 @@ export function Navbar() {
               {user ? (
                 <>
                   <Link href="/profile" className="block">
-                    <button className="w-full text-left px-4 py-2 hover:bg-muted dark:hover:bg-gray-800 rounded-lg transition-colors text-foreground dark:text-white font-semibold">
-                      Mi Perfil ({user.name})
-                    </button>
+                    <div className="flex items-center gap-3 px-4 py-2 hover:bg-muted dark:hover:bg-gray-800 rounded-lg transition-colors">
+                      <UserAvatar 
+                        image={user.profileImage} 
+                        name={user.name} 
+                        size="sm" 
+                      />
+                      <span className="text-foreground dark:text-white font-semibold">
+                        Mi Perfil ({user.name})
+                      </span>
+                    </div>
                   </Link>
                   <Link href="/orders" className="block">
                     <button className="w-full text-left px-4 py-2 hover:bg-muted dark:hover:bg-gray-800 rounded-lg transition-colors text-foreground dark:text-white font-semibold">

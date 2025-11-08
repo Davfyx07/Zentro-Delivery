@@ -23,6 +23,7 @@ import com.model.USER_ROLE;
 import com.model.User;
 import com.repository.CartRepository;
 import com.repository.UserRepository;
+import com.request.GoogleAuthRequest;
 import com.request.LoginRequest;
 import com.response.AuthResponse;
 import com.service.CustomerUserDetailsService;
@@ -61,6 +62,7 @@ public class AuthController {
         createdUser.setFullName(user.getFullName());
         createdUser.setRole(user.getRole());
         createdUser.setPassword(passwordEncoder.encode(user.getPassword()));
+        createdUser.setProvider("LOCAL"); // Establecer provider como LOCAL
 
         User savedUser = userRepository.save(createdUser);
 
@@ -101,6 +103,82 @@ public class AuthController {
 
     }
 
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponse> googleAuth(@RequestBody GoogleAuthRequest req) {
+        try {
+            // Buscar usuario por email
+            User existingUser = userRepository.findByEmail(req.getEmail());
+            
+            if (existingUser != null) {
+                // Usuario existe - verificar que sea cuenta de Google
+                if (!"GOOGLE".equals(existingUser.getProvider())) {
+                    throw new RuntimeException("Email already registered with email/password. Please use regular login.");
+                }
+                
+                // Actualizar foto de perfil si cambió
+                if (req.getProfileImage() != null && !req.getProfileImage().equals(existingUser.getProfileImage())) {
+                    existingUser.setProfileImage(req.getProfileImage());
+                    userRepository.save(existingUser);
+                }
+                
+                // Generar JWT
+                Authentication authentication = new UsernamePasswordAuthenticationToken(
+                    existingUser.getEmail(), 
+                    null, 
+                    existingUser.getRole() == USER_ROLE.ROLE_CUSTOMER 
+                        ? java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_CUSTOMER"))
+                        : java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_RESTAURANT_OWNER"))
+                );
+                
+                String jwt = jwtProvider.generateToken(authentication);
+                
+                AuthResponse authResponse = new AuthResponse();
+                authResponse.setJwt(jwt);
+                authResponse.setMessage("Google sign in successful");
+                authResponse.setRole(existingUser.getRole());
+                
+                return new ResponseEntity<>(authResponse, HttpStatus.OK);
+                
+            } else {
+                // Usuario nuevo - crear cuenta con Google
+                User newUser = new User();
+                newUser.setEmail(req.getEmail());
+                newUser.setFullName(req.getName());
+                newUser.setProvider("GOOGLE");
+                newUser.setProviderId(req.getProviderId());
+                newUser.setProfileImage(req.getProfileImage());
+                newUser.setRole(USER_ROLE.ROLE_CUSTOMER);
+                newUser.setPassword(null); // Sin password para usuarios de Google
+                
+                User savedUser = userRepository.save(newUser);
+                
+                // Crear carrito para el nuevo usuario
+                Cart cart = new Cart();
+                cart.setCustomer(savedUser);
+                cartRepository.save(cart);
+                
+                // Generar JWT
+                Authentication authentication = new UsernamePasswordAuthenticationToken(
+                    savedUser.getEmail(), 
+                    null,
+                    java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_CUSTOMER"))
+                );
+                
+                String jwt = jwtProvider.generateToken(authentication);
+                
+                AuthResponse authResponse = new AuthResponse();
+                authResponse.setJwt(jwt);
+                authResponse.setMessage("Google account created successfully");
+                authResponse.setRole(savedUser.getRole());
+                
+                return new ResponseEntity<>(authResponse, HttpStatus.CREATED);
+            }
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Google authentication failed: " + e.getMessage());
+        }
+    }
+
     private Authentication aunthenticate(String username, String password) {
 
         UserDetails userDetails = customerUserDetailsService.loadUserByUsername(username);
@@ -108,6 +186,13 @@ public class AuthController {
         if(userDetails == null) {
             throw new BadCredentialsException("Invalid username"); // Verifica el nombre de usuario
         }
+        
+        // Verificar si el usuario usa Google OAuth
+        User user = userRepository.findByEmail(username);
+        if(user != null && "GOOGLE".equals(user.getProvider())) {
+            throw new BadCredentialsException("This account uses Google Sign In. Please sign in with Google.");
+        }
+        
         if(!passwordEncoder.matches(password, userDetails.getPassword())) { // Verifica la contraseña
             throw new BadCredentialsException("Invalid password");
         }

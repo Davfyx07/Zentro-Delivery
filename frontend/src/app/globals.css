@@ -2,7 +2,9 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
-
+html {
+  scroll-behavior: smooth;
+}
 :root {
   /* Updated color scheme for Zentro Restaurant - warm orange/red tones with white and cream */
   --background: oklch(1 0 0);

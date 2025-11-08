@@ -1,8 +1,8 @@
 "use client"
 
+import Link from "next/link"
 import { Heart } from "lucide-react"
 import { useState } from "react"
-import { MenuModal } from "./menu-modal"
 
 const restaurants = [
   {
@@ -57,91 +57,70 @@ const restaurants = [
 
 export function RestaurantsSection() {
   const [favorites, setFavorites] = useState<number[]>([])
-  const [selectedRestaurant, setSelectedRestaurant] = useState<(typeof restaurants)[0] | null>(null)
-  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false)
 
   const toggleFavorite = (id: number) => {
     setFavorites((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
   }
 
-  const openMenu = (restaurant: (typeof restaurants)[0]) => {
-    setSelectedRestaurant(restaurant)
-    setIsMenuModalOpen(true)
-  }
-
   return (
-    <>
-      <section className="py-12 md:py-16 bg-muted/50 dark:bg-gray-800">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-foreground dark:text-white mb-8 text-balance">Restaurantes Disponibles</h2>
+    <section id="restaurants-section" className="py-12 md:py-16 bg-muted/50 dark:bg-gray-800">
+      <div className="max-w-7xl mx-auto px-4">
+        <h2 className="text-3xl font-bold text-foreground dark:text-white mb-8 text-balance">Restaurantes Disponibles</h2>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {restaurants.map((restaurant) => (
-              <div
-                key={restaurant.id}
-                className="bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all hover:scale-105 border border-border dark:border-gray-700 cursor-pointer"
-              >
-                {/* Image Container */}
-                <div className="relative h-48 overflow-hidden bg-muted">
-                  <img
-                    src={restaurant.image || "/placeholder.svg"}
-                    alt={restaurant.name}
-                    className="w-full h-full object-cover"
-                  />
-                  {/* Favorite Button */}
-                  <button
-                    onClick={() => toggleFavorite(restaurant.id)}
-                    className="absolute top-3 right-3 p-2 bg-white/90 rounded-full hover:bg-white transition-colors shadow-md"
-                  >
-                    <Heart
-                      className={`w-5 h-5 ${
-                        favorites.includes(restaurant.id) ? "fill-primary text-primary" : "text-muted-foreground"
-                      }`}
-                    />
-                  </button>
-                  {/* Status Badge */}
-                  <div
-                    className={`absolute bottom-3 left-3 px-3 py-1 rounded-full text-white font-semibold text-xs ${
-                      restaurant.status === "Abierto" ? "bg-green-500" : "bg-red-500"
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {restaurants.map((restaurant) => (
+            <Link
+              key={restaurant.id}
+              href={`/restaurant/${restaurant.id}`}
+              className="block bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all hover:scale-105 border border-border dark:border-gray-700 cursor-pointer"
+            >
+              {/* Image Container */}
+              <div className="relative h-48 overflow-hidden bg-muted dark:bg-gray-800">
+                <img
+                  src={restaurant.image || "/placeholder.svg"}
+                  alt={restaurant.name}
+                  className="w-full h-full object-cover"
+                />
+                {/* Favorite Button */}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    toggleFavorite(restaurant.id)
+                  }}
+                  className="absolute top-3 right-3 p-2 bg-white/90 dark:bg-gray-800/90 rounded-full hover:bg-white dark:hover:bg-gray-700 transition-colors shadow-md"
+                >
+                  <Heart
+                    className={`w-5 h-5 ${
+                      favorites.includes(restaurant.id) ? "fill-primary text-primary" : "text-muted-foreground dark:text-gray-400"
                     }`}
-                  >
-                    {restaurant.status}
-                  </div>
+                  />
+                </button>
+                {/* Status Badge */}
+                <div
+                  className={`absolute bottom-3 left-3 px-3 py-1 rounded-full text-white font-semibold text-xs ${
+                    restaurant.status === "Abierto" ? "bg-green-500" : "bg-red-500"
+                  }`}
+                >
+                  {restaurant.status}
                 </div>
+              </div>
 
-                {/* Content */}
-                <div className="p-4">
-                  <h3 className="font-bold text-lg text-foreground dark:text-white mb-1">{restaurant.name}</h3>
-                  <p className="text-sm text-muted-foreground dark:text-gray-400 mb-3">{restaurant.description}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <span className="text-yellow-500">⭐</span>
-                      <span className="font-semibold text-foreground dark:text-white">{restaurant.rating}</span>
-                    </div>
-                    <button
-                      onClick={() => openMenu(restaurant)}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:bg-secondary transition-colors"
-                    >
-                      Ver menú
-                    </button>
+              {/* Content */}
+              <div className="p-4">
+                <h3 className="font-bold text-lg text-foreground dark:text-white mb-1">{restaurant.name}</h3>
+                <p className="text-sm text-muted-foreground dark:text-gray-400 mb-3">{restaurant.description}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <span className="text-yellow-500">⭐</span>
+                    <span className="font-semibold text-foreground dark:text-white">{restaurant.rating}</span>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            </Link>
+          ))}
         </div>
-      </section>
-
-      {/* Menu Modal */}
-      {selectedRestaurant && (
-        <MenuModal
-          isOpen={isMenuModalOpen}
-          onClose={() => setIsMenuModalOpen(false)}
-          restaurantId={selectedRestaurant.id}
-          restaurantName={selectedRestaurant.name}
-          items={[]}
-        />
-      )}
-    </>
+      </div>
+    </section>
   )
 }
