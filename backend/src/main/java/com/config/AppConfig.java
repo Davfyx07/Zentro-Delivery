@@ -43,10 +43,10 @@ public class AppConfig {
             @Override
             public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
                 CorsConfiguration cfg = new CorsConfiguration();
-                cfg.setAllowedOrigins(Arrays.asList(
-                        "http://localhost:3000",
-                        "https://localhost:3000",
-                        "https://zentro-delivery.vercel.app"
+                cfg.setAllowedOriginPatterns(Arrays.asList(
+                        "http://localhost:*",
+                        "https://localhost:*",
+                        "https://*.vercel.app"
                 ));
                 cfg.setAllowedMethods(Collections.singletonList("*"));
                 cfg.setAllowCredentials(true);
