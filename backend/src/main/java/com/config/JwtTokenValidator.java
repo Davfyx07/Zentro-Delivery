@@ -24,6 +24,13 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtTokenValidator extends OncePerRequestFilter {
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        // No aplicar el filtro JWT a rutas públicas
+        String path = request.getRequestURI();
+        return path.startsWith("/auth/");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         
         String jwt = request.getHeader(JwtConstant.JWT_HEADER);
