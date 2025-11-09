@@ -111,6 +111,7 @@ export const useAuth = create<AuthState>()(
     }),
     {
       name: "zentro_auth",
+      skipHydration: true,
     },
   ),
 )
