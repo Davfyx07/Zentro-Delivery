@@ -1,38 +1,94 @@
 "use client"
 
 import { useAuth } from "@/hooks/use-auth"
-import { ProfilePictureUpload } from "@/components/profile-picture-upload"
+import { AvatarUpload } from "@/components/avatar-upload"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Mail, MapPin, Phone, User } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import axios from "axios"
 import { useToast } from "@/hooks/use-toast"
 
 export default function ProfilePage() {
-  const { user, updateProfileImage, updateProfile } = useAuth()
+  const { user, setUser } = useAuth()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const [isFetchingProfile, setIsFetchingProfile] = useState(true)
   const [formData, setFormData] = useState({
     fullName: user?.name || "",
     phoneNumber: user?.phone || "",
     address: user?.address || "",
   })
 
-  if (!user) {
+  // Cargar perfil del backend al montar el componente
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const jwt = localStorage.getItem("zentro_jwt")
+        if (!jwt) return
+
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/users/profile`,
+          {
+            headers: {
+              Authorization: `Bearer ${jwt}`,
+            },
+          }
+        )
+
+        // Actualizar Zustand con datos frescos del backend
+        setUser({
+          id: response.data.email,
+          email: response.data.email,
+          name: response.data.fullName,
+          phone: response.data.phoneNumber,
+          address: response.data.address,
+          profileImage: response.data.profileImage,
+          role: response.data.role === "ROLE_CUSTOMER" ? "customer" : "owner",
+          createdAt: user?.createdAt || new Date().toISOString(),
+        })
+
+        // Actualizar formulario
+        setFormData({
+          fullName: response.data.fullName || "",
+          phoneNumber: response.data.phoneNumber || "",
+          address: response.data.address || "",
+        })
+      } catch (error) {
+        console.error("Error fetching profile:", error)
+      } finally {
+        setIsFetchingProfile(false)
+      }
+    }
+
+    fetchProfile()
+  }, [])
+
+  if (!user || isFetchingProfile) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <p>Por favor inicia sesión para ver tu perfil</p>
+      <div className="container mx-auto px-4 py-8 pt-24 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-16 w-16 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          <p className="text-muted-foreground">Cargando perfil...</p>
+        </div>
       </div>
     )
   }
 
-  const handleImageChange = (imageUrl: string) => {
-    updateProfileImage(imageUrl)
-    // TODO: Cuando tengamos backend, enviar a Cloudinary y actualizar en DB
+  const handleAvatarUploadSuccess = (imageUrl: string) => {
+    // Actualizar el usuario en Zustand con la nueva imagen
+    setUser({
+      ...user,
+      profileImage: imageUrl,
+    })
+    
+    toast({
+      title: "✅ Foto actualizada",
+      description: "Tu foto de perfil se actualizó correctamente",
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,7 +119,8 @@ export default function ProfilePage() {
       )
 
       // Actualizar el estado local
-      updateProfile({
+      setUser({
+        ...user,
         name: response.data.fullName,
         phone: response.data.phoneNumber,
         address: response.data.address,
@@ -111,10 +168,10 @@ export default function ProfilePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
-              <ProfilePictureUpload
+              <AvatarUpload
                 currentImage={user.profileImage}
                 userName={user.name}
-                onImageChange={handleImageChange}
+                onUploadSuccess={handleAvatarUploadSuccess}
               />
               <div className="text-center">
                 <p className="font-semibold text-lg">{user.name}</p>

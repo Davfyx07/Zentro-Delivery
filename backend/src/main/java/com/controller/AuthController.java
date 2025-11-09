@@ -78,6 +78,8 @@ public class AuthController {
         authResponse.setJwt(jwt);
         authResponse.setMessage("User created successfully");
         authResponse.setRole(savedUser.getRole());
+        authResponse.setFullName(savedUser.getFullName());
+        authResponse.setEmail(savedUser.getEmail());
 
         return new ResponseEntity<>(authResponse, HttpStatus.CREATED);
     }
@@ -92,12 +94,17 @@ public class AuthController {
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
         String role = authorities.isEmpty()?null:authorities.iterator().next().getAuthority(); // Obtener el primer rol
 
+        // Obtener el usuario desde la base de datos para obtener su información
+        User user = userRepository.findByEmail(username);
+
         String jwt = jwtProvider.generateToken(authentication);
         
         AuthResponse authResponse = new AuthResponse();
         authResponse.setJwt(jwt);
         authResponse.setMessage("User signed in successfully"); // Mensaje de inicio de sesión exitoso
         authResponse.setRole(USER_ROLE.valueOf(role));
+        authResponse.setFullName(user.getFullName());
+        authResponse.setEmail(user.getEmail());
 
         return new ResponseEntity<>(authResponse, HttpStatus.OK);
 

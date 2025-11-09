@@ -50,9 +50,9 @@ export default function LoginPage() {
 
       // Actualizar el estado de usuario
       setUser({
-        id: email, // Temporal, idealmente deberías obtenerlo del backend
-        email: email,
-        name: email.split("@")[0], // Temporal
+        id: response.data.email,
+        email: response.data.email,
+        name: response.data.fullName,
         role: response.data.role === "ROLE_CUSTOMER" ? "customer" : "owner",
         createdAt: new Date().toISOString(),
       })

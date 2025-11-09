@@ -82,9 +82,9 @@ export default function SignupPage() {
 
       // Actualizar el estado de usuario
       setUser({
-        id: formData.email,
-        email: formData.email,
-        name: formData.name,
+        id: response.data.email,
+        email: response.data.email,
+        name: response.data.fullName,
         role: response.data.role === "ROLE_CUSTOMER" ? "customer" : "owner",
         createdAt: new Date().toISOString(),
       })
