@@ -194,11 +194,9 @@ export default function LoginPage() {
                 </Button>
               </div>
 
-              {/* Olvidaste contraseña */}
+              {/* Olvidaste contraseña (temporalmente deshabilitado) */}
               <div className="text-right mt-1">
-                <Link href="/reset-password" className="text-sm text-primary hover:underline">
-                  ¿Olvidaste tu contraseña?
-                </Link>
+                <p className="text-sm text-muted-foreground">¿Olvidaste tu contraseña? Actualmente esta funcionalidad está temporalmente deshabilitada. Si necesitas ayuda, contacta al soporte.</p>
               </div>
             </div>
 

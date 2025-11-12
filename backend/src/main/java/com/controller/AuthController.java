@@ -26,10 +26,9 @@ import com.repository.UserRepository;
 import com.request.ForgotPasswordRequest;
 import com.request.GoogleAuthRequest;
 import com.request.LoginRequest;
-import com.request.ResetPasswordRequest;
+// Reset password request DTO removed as reset functionality is disabled
 import com.response.AuthResponse;
 import com.service.CustomerUserDetailsService;
-import com.service.PasswordResetService;
 
 @RestController
 @RequestMapping("/auth")
@@ -51,7 +50,7 @@ public class AuthController {
     private CartRepository cartRepository;
 
     @Autowired
-    private PasswordResetService passwordResetService;
+    
 
 
     @PostMapping("/signup")
@@ -217,22 +216,14 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordRequest request) {
-        try {
-            passwordResetService.createPasswordResetToken(request.getEmail());
-            return ResponseEntity.ok("Se ha enviado un email con instrucciones para restablecer tu contraseña");
-        } catch (Exception e) {
-            return ResponseEntity.status(400).body(e.getMessage());
-        }
+        // Funcionalidad temporalmente deshabilitada
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body("Funcionalidad de restablecer contraseña temporalmente deshabilitada");
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
-        try {
-            passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
-            return ResponseEntity.ok("Contraseña actualizada exitosamente");
-        } catch (Exception e) {
-            return ResponseEntity.status(400).body(e.getMessage());
-        }
+    public ResponseEntity<String> resetPassword() {
+        // Funcionalidad temporalmente deshabilitada
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body("Funcionalidad de restablecer contraseña temporalmente deshabilitada");
     }
 
 
