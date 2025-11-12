@@ -23,10 +23,13 @@ import com.model.USER_ROLE;
 import com.model.User;
 import com.repository.CartRepository;
 import com.repository.UserRepository;
+import com.request.ForgotPasswordRequest;
 import com.request.GoogleAuthRequest;
 import com.request.LoginRequest;
+import com.request.ResetPasswordRequest;
 import com.response.AuthResponse;
 import com.service.CustomerUserDetailsService;
+import com.service.PasswordResetService;
 
 @RestController
 @RequestMapping("/auth")
@@ -47,6 +50,8 @@ public class AuthController {
     @Autowired
     private CartRepository cartRepository;
 
+    @Autowired
+    private PasswordResetService passwordResetService;
 
 
     @PostMapping("/signup")
@@ -209,4 +214,27 @@ public class AuthController {
                 userDetails.getAuthorities()  //  Authorities (roles/permisos del usuario
         );
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        try {
+            passwordResetService.createPasswordResetToken(request.getEmail());
+            return ResponseEntity.ok("Se ha enviado un email con instrucciones para restablecer tu contraseña");
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
+            return ResponseEntity.ok("Contraseña actualizada exitosamente");
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(e.getMessage());
+        }
+    }
+
+
+    
 }

@@ -60,7 +60,13 @@ export default function LoginPage() {
       router.push("/")
     } catch (error: any) {
       console.error("Error en login:", error)
-      setError(error.response?.data?.message || "Email o contraseña incorrectos")
+      const status = error.response?.status
+      const data = error.response?.data
+      if (status === 401 || status === 403) {
+        setError("Email o contraseña incorrectos")
+      } else {
+        setError(data?.message || (typeof data === "string" ? data : "Ocurrió un error. Intenta de nuevo"))
+      }
     } finally {
       setIsLoading(false)
     }
@@ -187,13 +193,20 @@ export default function LoginPage() {
                   )}
                 </Button>
               </div>
+
+              {/* Olvidaste contraseña */}
+              <div className="text-right mt-1">
+                <Link href="/reset-password" className="text-sm text-primary hover:underline">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
-                <p className="text-sm text-destructive">{error}</p>
+              <div className="flex items-center gap-2 error-label">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <p className="form-error">{error}</p>
               </div>
             )}
 

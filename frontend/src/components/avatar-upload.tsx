@@ -110,7 +110,7 @@ export function AvatarUpload({ currentImage, userName, onUploadSuccess }: Avatar
         </label>
       </div>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         Click en la cámara para cambiar tu foto
       </p>
     </div>

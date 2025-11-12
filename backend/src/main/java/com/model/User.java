@@ -29,7 +29,8 @@ public class User {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    private String FullName;
+    // Use camelCase field name to serialize as `fullName` in JSON
+    private String fullName;
 
     private String email;
 

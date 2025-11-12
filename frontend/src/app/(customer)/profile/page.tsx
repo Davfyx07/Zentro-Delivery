@@ -7,23 +7,23 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail, MapPin, Phone, User } from "lucide-react"
+import { Mail, Phone, User, Edit2, Check, Camera } from "lucide-react"
 import { useState, useEffect } from "react"
 import axios from "axios"
 import { useToast } from "@/hooks/use-toast"
+import { AddressesManager } from "@/components/addresses-manager"
 
 export default function ProfilePage() {
   const { user, setUser } = useAuth()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [isFetchingProfile, setIsFetchingProfile] = useState(true)
+  const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
     fullName: user?.name || "",
     phoneNumber: user?.phone || "",
-    address: user?.address || "",
   })
 
-  // Cargar perfil del backend al montar el componente
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -39,23 +39,21 @@ export default function ProfilePage() {
           }
         )
 
-        // Actualizar Zustand con datos frescos del backend
+        // Actualizar usuario en contexto y formulario
         setUser({
           id: response.data.email,
           email: response.data.email,
           name: response.data.fullName,
           phone: response.data.phoneNumber,
-          address: response.data.address,
+          addresses: response.data.addresses || [],
           profileImage: response.data.profileImage,
           role: response.data.role === "ROLE_CUSTOMER" ? "customer" : "owner",
           createdAt: user?.createdAt || new Date().toISOString(),
         })
 
-        // Actualizar formulario
         setFormData({
           fullName: response.data.fullName || "",
           phoneNumber: response.data.phoneNumber || "",
-          address: response.data.address || "",
         })
       } catch (error) {
         console.error("Error fetching profile:", error)
@@ -63,7 +61,6 @@ export default function ProfilePage() {
         setIsFetchingProfile(false)
       }
     }
-
     fetchProfile()
   }, [])
 
@@ -78,13 +75,17 @@ export default function ProfilePage() {
     )
   }
 
+  const userInitials = user.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+
   const handleAvatarUploadSuccess = (imageUrl: string) => {
-    // Actualizar el usuario en Zustand con la nueva imagen
     setUser({
       ...user,
       profileImage: imageUrl,
     })
-    
     toast({
       title: "✅ Foto actualizada",
       description: "Tu foto de perfil se actualizó correctamente",
@@ -94,22 +95,15 @@ export default function ProfilePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
     try {
       const jwt = localStorage.getItem("zentro_jwt")
-      console.log("JWT encontrado:", jwt ? "Sí" : "No")
-      console.log("JWT value:", jwt)
-      
-      if (!jwt) {
-        throw new Error("No JWT token found")
-      }
+      if (!jwt) throw new Error("No JWT token found")
 
       const response = await axios.put(
         `${process.env.NEXT_PUBLIC_API_URL}/api/users/profile`,
         {
           fullName: formData.fullName,
           phoneNumber: formData.phoneNumber,
-          address: formData.address,
         },
         {
           headers: {
@@ -118,22 +112,21 @@ export default function ProfilePage() {
         }
       )
 
-      // Actualizar el estado local
       setUser({
         ...user,
         name: response.data.fullName,
         phone: response.data.phoneNumber,
-        address: response.data.address,
       })
+      setIsEditing(false)
 
       toast({
-        title: "✅ Perfil actualizado",
+        title: "¡Perfil actualizado!",
         description: "Tus cambios se guardaron correctamente",
       })
     } catch (error: any) {
       console.error("Error updating profile:", error)
       toast({
-        title: "❌ Error",
+        title: "¡Error!",
         description: error.response?.data?.message || "No se pudo actualizar el perfil",
         variant: "destructive",
       })
@@ -146,152 +139,152 @@ export default function ProfilePage() {
     setFormData({
       fullName: user.name,
       phoneNumber: user.phone || "",
-      address: user.address || "",
     })
+    setIsEditing(false)
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 pt-24 max-w-6xl">
+    <div className="min-h-screen bg-background flex flex-col mx-auto px-4 py-8 pt-24 max-w-3xl">
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-2">Mi Perfil</h1>
-        <p className="text-muted-foreground">Administra tu información personal</p>
+        <p className="text-muted-foreground">Administra tu información personal y direcciones</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Sidebar con foto de perfil */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Foto de Perfil</CardTitle>
-              <CardDescription>
-                Haz clic en el ícono de cámara para cambiar tu foto
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center gap-4">
-              <AvatarUpload
-                currentImage={user.profileImage}
-                userName={user.name}
-                onUploadSuccess={handleAvatarUploadSuccess}
-              />
-              <div className="text-center">
-                <p className="font-semibold text-lg">{user.name}</p>
-                <p className="text-sm text-muted-foreground">{user.email}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Rol de Usuario</CardTitle>
+      <div className=" grid grid-cols-1 lg:grid-cols-3 gap-8"> 
+        {/* Main content */}
+        <div className="lg:col-span-3 space-y-6">
+          <Card className="mb-6">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardTitle>Información Personal</CardTitle>
+              {!isEditing && (
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                  <Edit2 className="w-4 h-4 mr-1" />
+                  Editar
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-2">
-                <div className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium capitalize">
-                  {user.role === 'customer' ? 'Cliente' : user.role === 'owner' ? 'Propietario' : 'Admin'}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              {isEditing ? (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="flex justify-center mb-6">
+                    <div className="relative">
+                      <AvatarUpload
+                        currentImage={user.profileImage}
+                        userName={user.name}
+                        onUploadSuccess={handleAvatarUploadSuccess}
+                      />
+                      {/* Optional camera icon overlay if needed */}
+                    </div>
+                  </div>
 
-        {/* Contenido principal */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Información Personal */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Información Personal</CardTitle>
-              <CardDescription>
-                Actualiza tu información de contacto
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nombre Completo</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="name"
-                        value={formData.fullName}
-                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                        className="pl-10"
-                      />
-                    </div>
+                    <Input
+                      id="name"
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      placeholder="Tu nombre"
+                      required
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="email">Correo Electrónico</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        type="email"
-                        defaultValue={user.email}
-                        className="pl-10"
-                        disabled
+                    <Input
+                      id="email"
+                      type="email"
+                      value={user.email}
+                      disabled
+                      className="opacity-60"
+                    />
+                    <p className="text-xs text-muted-foreground">No se puede cambiar el correo electrónico</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Teléfono (Opcional)</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phoneNumber}
+                      onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                      placeholder="+52 123 456 7890"
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <Button type="submit" disabled={isLoading} className="flex-1">
+                      <Check className="w-4 h-4 mr-1" />
+                      {isLoading ? "Guardando..." : "Guardar"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCancel}
+                      disabled={isLoading}
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className="flex flex-col md:flex-row gap-6">
+                  <div className="flex justify-center md:justify-start flex-shrink-0">
+                    <div className="h-32 w-32">
+                      <AvatarUpload
+                        currentImage={user.profileImage}
+                        userName={user.name}
+                        onUploadSuccess={handleAvatarUploadSuccess}
                       />
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Teléfono (Opcional)</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="phone"
-                      placeholder="+52 123 456 7890"
-                      value={formData.phoneNumber}
-                      onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                      className="pl-10"
-                    />
+                  <div className="flex-1 space-y-3">
+                    {formData.fullName && (
+                      <div className="flex items-center gap-3">
+                        <User className="w-5 h-5 text-primary flex-shrink-0" />
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground">NOMBRE</p>
+                          <p className="font-medium">{formData.fullName}</p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3">
+                      <Mail className="w-5 h-5 text-primary flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground">CORREO</p>
+                        <p className="font-medium">{user.email}</p>
+                      </div>
+                    </div>
+                    {formData.phoneNumber && (
+                      <div className="flex items-center gap-3">
+                        <Phone className="w-5 h-5 text-primary flex-shrink-0" />
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground">TELÉFONO</p>
+                          <p className="font-medium">{formData.phoneNumber}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                <Separator />
-
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={handleCancel} disabled={isLoading}>
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={isLoading}>
-                    {isLoading ? "Guardando..." : "Guardar Cambios"}
-                  </Button>
-                </div>
-              </form>
+              )}
             </CardContent>
           </Card>
 
-          {/* Direcciones */}
+          {/* Addresses Manager */}
           <Card>
             <CardHeader>
-              <CardTitle>Dirección de Entrega</CardTitle>
+              <CardTitle>Direcciones</CardTitle>
               <CardDescription>
-                Administra tu dirección principal
+                Administra todas tus direcciones, selecciona predeterminada, edita o elimina.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="address">Dirección Principal</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="address"
-                    placeholder="Calle, número, colonia, ciudad"
-                    className="pl-10"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Esta dirección se guardará junto con tu nombre y teléfono al hacer clic en "Guardar Cambios" arriba.
-                </p>
-              </div>
+            <CardContent>
+              <AddressesManager />
             </CardContent>
           </Card>
 
-          {/* Restaurantes Favoritos */}
+          {/* Favoritos */}
           <Card>
             <CardHeader>
               <CardTitle>Restaurantes Favoritos</CardTitle>

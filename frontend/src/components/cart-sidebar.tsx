@@ -35,13 +35,15 @@ export function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
 
     if (items.length === 0) return
 
+    const defaultAddress = user.addresses?.find(addr => addr.isDefault)
+    const address = defaultAddress ? defaultAddress.address : "Dirección no especificada"
     // Create order
     addOrder({
       userId: user.id,
       items,
       total: getTotal(),
       status: "confirmed",
-      address: user.address || "Dirección no especificada",
+      address: address
     })
 
     // Clear cart

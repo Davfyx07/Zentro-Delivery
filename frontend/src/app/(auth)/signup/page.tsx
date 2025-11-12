@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 import Link from "next/link"
@@ -12,11 +12,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { GoogleSignInButton } from "@/components/google-sign-in-button"
 import axios from "axios"
+import { validateHeaderName } from "http"
 
 export default function SignupPage() {
   const router = useRouter()
   const { setUser } = useAuth()
   const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordRules, setShowPasswordRules] = useState(false)
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -34,6 +37,7 @@ export default function SignupPage() {
       [name]: value,
     }))
   }
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,6 +66,12 @@ export default function SignupPage() {
 
     if (!formData.email.includes("@")) {
       setError("Por favor ingresa un email válido")
+      setIsLoading(false)
+      return
+    }
+
+    if(!validatePasswordStrength(formData.password)) {
+      setError("La contraseña debe incluir mayúsculas, minúsculas, números y caracteres especiales")
       setIsLoading(false)
       return
     }
@@ -95,11 +105,55 @@ export default function SignupPage() {
       }, 1500)
     } catch (error: any) {
       console.error("Error en registro:", error)
-      setError(error.response?.data?.message || "Este email ya está registrado")
+      const status = error.response?.status
+      const data = error.response?.data
+      // Map common server statuses to friendly messages
+      if (status === 409) {
+        setError("Este email ya está registrado")
+      } else {
+        setError(data?.message || (typeof data === "string" ? data : "Ocurrió un error. Intenta de nuevo"))
+      }
     } finally {
       setIsLoading(false)
     }
   }
+
+  function validatePasswordStrength(password: string) {
+    const minLength = password.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?|]/.test(password);
+    return minLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
+  }
+
+  
+
+// Funciones para validar cada regla
+const validateRules = {
+  minLength: (pw: string) => pw.length >= 8,
+  hasUpper: (pw: string) => /[A-Z]/.test(pw),
+  hasLower: (pw: string) => /[a-z]/.test(pw),
+  hasNumber: (pw: string) => /[0-9]/.test(pw),
+  hasSpecial: (pw: string) => /[!@#$%^&*(),.?|]/.test(pw),
+  passwordsMatch: (pw: string, cpw: string) => pw === cpw && pw.length > 0,
+}
+
+const hasAnyError = !(
+  validateRules.minLength(formData.password) &&
+  validateRules.hasUpper(formData.password) &&
+  validateRules.hasLower(formData.password) &&
+  validateRules.hasNumber(formData.password) &&
+  validateRules.hasSpecial(formData.password) &&
+  validateRules.passwordsMatch(formData.password, formData.confirmPassword)
+);
+
+  useEffect(() => {
+    if (hasAnyError) {
+      setShowPasswordRules(true);
+    } else setShowPasswordRules(false);
+  }, [formData.password]);
+
 
   return (
     <main className="min-h-screen bg-background dark:bg-gray-900 flex">
@@ -234,7 +288,7 @@ export default function SignupPage() {
               </div>
 
               {/* Password Input */}
-              <div className="space-y-1.5">
+             <div className="space-y-1.5">
                 <Label htmlFor="password">Contraseña</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -247,12 +301,31 @@ export default function SignupPage() {
                     placeholder="••••••••"
                     className="pl-10 pr-10"
                   />
+
+                  {/* Botón para toggle de reglas */}
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordRules(!showPasswordRules)}
+                    className="absolute right-10 top-1/2 -translate-y-1/2 p-1 rounded"
+                    aria-label="Mostrar / ocultar reglas de contraseña"
+                  >
+                  {showPasswordRules ? (
+                    <AlertCircle className="w-5 h-5 text-red-500" />
+                  ) : hasAnyError ? (
+                    <AlertCircle className="w-5 h-5 text-red-500" />
+                  ) : (
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  )}
+                  </button>
+
+                  {/* Botón para mostrar/ocultar contraseña */}
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 px-3 py-2 hover:bg-transparent"
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                   >
                     {showPassword ? (
                       <EyeOff className="w-4 h-4 text-muted-foreground" />
@@ -261,7 +334,31 @@ export default function SignupPage() {
                     )}
                   </Button>
                 </div>
+
+                {showPasswordRules && (
+                  <ul className="mt-2 text-xs pl-5 list-disc text-muted-foreground">
+                    <li className={validateRules.minLength(formData.password) ? "text-green-600" : "text-red-600"}>
+                      Mínimo 8 caracteres
+                    </li>
+                    <li className={validateRules.hasUpper(formData.password) ? "text-green-600" : "text-red-600"}>
+                      Al menos una mayúscula (A-Z)
+                    </li>
+                    <li className={validateRules.hasLower(formData.password) ? "text-green-600" : "text-red-600"}>
+                      Al menos una minúscula (a-z)
+                    </li>
+                    <li className={validateRules.hasNumber(formData.password) ? "text-green-600" : "text-red-600"}>
+                      Al menos un número (0-9)
+                    </li>
+                    <li className={validateRules.hasSpecial(formData.password) ? "text-green-600" : "text-red-600"}>
+                      Al menos un caracter especial (!@#$%^&*(),.?|)
+                    </li>
+                    <li className={validateRules.passwordsMatch(formData.password, formData.confirmPassword) ? "text-green-600" : "text-red-600"}>
+                      Las contraseñas deben coincidir
+                    </li>
+                  </ul>
+                )}
               </div>
+
 
               {/* Confirm Password Input */}
               <div className="space-y-1.5">
@@ -295,9 +392,9 @@ export default function SignupPage() {
 
               {/* Error Message */}
               {error && (
-                <div className="flex items-center gap-2 p-2.5 bg-destructive/10 border border-destructive/20 rounded-lg">
-                  <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
-                  <p className="text-sm text-destructive">{error}</p>
+                <div className="flex items-center gap-2 error-label">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <p className="form-error">{error}</p>
                 </div>
               )}
 

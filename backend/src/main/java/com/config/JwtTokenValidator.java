@@ -25,7 +25,8 @@ public class JwtTokenValidator extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        // No aplicar el filtro JWT a rutas públicas
+        // No aplicar el filtro JWT a rutas públicas (login, signup, etc.)
+        // Esto permite que las peticiones a /auth/* no requieran token JWT
         String path = request.getRequestURI();
         return path.startsWith("/auth/");
     }

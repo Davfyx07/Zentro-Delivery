@@ -22,7 +22,7 @@ html {
   --accent: #ffdbcf; /* Soft warm accent */
   --accent-foreground: #d83125;
   --destructive: #e7000b;
-  --destructive-foreground: #e7000b;
+  --destructive-foreground: #fafafa;
   --border: #eeeeee;
   --input: #faf4ee;
   --ring: #d83125;
@@ -40,12 +40,13 @@ html {
   --sidebar-accent-foreground: #d83125;
   --sidebar-border: #e5e5e5;
   --sidebar-ring: #d83125;
+  --dialogs: #fafafa;
 }
 
 .dark {
   --background: #1E2939;
   --foreground: #fafafa;
-  --card: #020618;
+  --card: #101828;
   --card-foreground: #fafafa;
   --popover: #0a0a0a;
   --popover-foreground: #fafafa;
@@ -57,8 +58,8 @@ html {
   --muted-foreground: #a1a1a1;
   --accent: #ffdbcf;
   --accent-foreground: #d83125;
-  --destructive: #82181a;
-  --destructive-foreground: #fb2c36;
+  --destructive: #d83125;
+  --destructive-foreground: #fafafa;
   --border: #262626;
   --input: #262626;
   --ring: #d83125;
@@ -75,6 +76,17 @@ html {
   --sidebar-accent-foreground: #fafafa;
   --sidebar-border: #262626;
   --sidebar-ring: #d83125;
+  /* Error / validation colors for dark mode */
+  --error-bg: #4c1d1d; /* dark red background */
+  --error-fg: #fff5f5; /* light text for strong contrast */
+  --error-border: #6b1212;
+}
+
+/* Error / validation colors for light mode */
+:root, :host {
+  --error-bg: #fff1f2; /* very light red/pink */
+  --error-fg: #b91c1c; /* strong red (rose-700) */
+  --error-border: #fecaca; /* soft border */
 }
 
 @theme inline {
@@ -124,5 +136,31 @@ html {
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Reusable error / validation styles (light + dark via variables above) */
+  .error-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--error-bg);
+    color: var(--error-fg);
+    border: 1px solid var(--error-border);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8125rem; /* 13px */
+    border-radius: 0.375rem;
+  }
+
+  .form-error {
+    color: var(--error-fg);
+    background: transparent;
+    font-size: 0.875rem;
+    line-height: 1.2;
+  }
+
+  /* Inputs with error state (gives readable border/background in both themes) */
+  .input-error {
+    border-color: var(--error-border) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--error-bg) 20%, transparent) !important;
   }
 }
