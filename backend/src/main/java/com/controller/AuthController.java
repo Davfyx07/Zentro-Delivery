@@ -47,11 +47,7 @@ public class AuthController {
 
     @Autowired
     private CartRepository cartRepository;
-
-    @Autowired
     
-
-
     @PostMapping("/signup")
     public ResponseEntity<AuthResponse> createUserHandler(@RequestBody User user) {
         // Implement user creation logic
