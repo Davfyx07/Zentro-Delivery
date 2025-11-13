@@ -27,9 +27,6 @@
 
 **Proveedores sugeridos:**
 - ✅ Google (más usado)
-- ✅ Apple (requerido para iOS)
-- ✅ Facebook
-- GitHub (opcional)
 
 **Implementación:**
 - Instalar `next-auth`

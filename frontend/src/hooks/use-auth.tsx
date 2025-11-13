@@ -2,6 +2,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import api from "@/lib/api"
 
 // MODELO DE DIRECCIÓN
 export interface Address {
@@ -116,61 +117,116 @@ export const useAuth = create<AuthState>()(
       setUser: (user) => set({ user }),
 
       // ---- DIRECCIONES MULTIPLES ----
-      addAddress: (address) => {
+      addAddress: async (address) => {
         const user = get().user
         if (!user) return
-        const updatedAddresses = [...(user.addresses || []), address]
-        const updatedUser = { ...user, addresses: updatedAddresses }
-        const users = getStoredUsers()
-        if (users[user.email]) {
-          users[user.email].user = updatedUser
-          saveStoredUsers(users)
+
+        try {
+          const res = await api.post('/api/addresses', address)
+          const saved = res.data
+          const updatedAddresses = [...(user.addresses || []), saved]
+          const updatedUser = { ...user, addresses: updatedAddresses }
+          const users = getStoredUsers()
+          if (users[user.email]) {
+            users[user.email].user = updatedUser
+            saveStoredUsers(users)
+          }
+          set({ user: updatedUser })
+          return
+        } catch (e) {
+          // Fallback to local storage update for offline/failed requests
+          const updatedAddresses = [...(user.addresses || []), address]
+          const updatedUser = { ...user, addresses: updatedAddresses }
+          const users = getStoredUsers()
+          if (users[user.email]) {
+            users[user.email].user = updatedUser
+            saveStoredUsers(users)
+          }
+          set({ user: updatedUser })
         }
-        set({ user: updatedUser })
       },
 
-      updateAddress: (id, data) => {
+      updateAddress: async (id, data) => {
         const user = get().user
         if (!user) return
-        const updatedAddresses = (user.addresses || []).map((addr) =>
-          addr.id === id ? { ...addr, ...data } : addr
-        )
-        const updatedUser = { ...user, addresses: updatedAddresses }
-        const users = getStoredUsers()
-        if (users[user.email]) {
-          users[user.email].user = updatedUser
-          saveStoredUsers(users)
+
+        try {
+          const res = await api.put(`/api/addresses/${id}`, data)
+          const saved = res.data
+          const updatedAddresses = (user.addresses || []).map((addr) => (addr.id === id ? saved : addr))
+          const updatedUser = { ...user, addresses: updatedAddresses }
+          const users = getStoredUsers()
+          if (users[user.email]) {
+            users[user.email].user = updatedUser
+            saveStoredUsers(users)
+          }
+          set({ user: updatedUser })
+          return
+        } catch (e) {
+          const updatedAddresses = (user.addresses || []).map((addr) => (addr.id === id ? { ...addr, ...data } : addr))
+          const updatedUser = { ...user, addresses: updatedAddresses }
+          const users = getStoredUsers()
+          if (users[user.email]) {
+            users[user.email].user = updatedUser
+            saveStoredUsers(users)
+          }
+          set({ user: updatedUser })
         }
-        set({ user: updatedUser })
       },
 
-      deleteAddress: (id) => {
+      deleteAddress: async (id) => {
         const user = get().user
         if (!user) return
-        const updatedAddresses = (user.addresses || []).filter((addr) => addr.id !== id)
-        const updatedUser = { ...user, addresses: updatedAddresses }
-        const users = getStoredUsers()
-        if (users[user.email]) {
-          users[user.email].user = updatedUser
-          saveStoredUsers(users)
+
+        try {
+          await api.delete(`/api/addresses/${id}`)
+          const updatedAddresses = (user.addresses || []).filter((addr) => addr.id !== id)
+          const updatedUser = { ...user, addresses: updatedAddresses }
+          const users = getStoredUsers()
+          if (users[user.email]) {
+            users[user.email].user = updatedUser
+            saveStoredUsers(users)
+          }
+          set({ user: updatedUser })
+          return
+        } catch (e) {
+          const updatedAddresses = (user.addresses || []).filter((addr) => addr.id !== id)
+          const updatedUser = { ...user, addresses: updatedAddresses }
+          const users = getStoredUsers()
+          if (users[user.email]) {
+            users[user.email].user = updatedUser
+            saveStoredUsers(users)
+          }
+          set({ user: updatedUser })
         }
-        set({ user: updatedUser })
       },
 
-      setDefaultAddress: (id) => {
+      setDefaultAddress: async (id) => {
         const user = get().user
         if (!user) return
-        const updatedAddresses = (user.addresses || []).map((addr) => ({
-          ...addr,
-          isDefault: addr.id === id,
-        }))
-        const updatedUser = { ...user, addresses: updatedAddresses }
-        const users = getStoredUsers()
-        if (users[user.email]) {
-          users[user.email].user = updatedUser
-          saveStoredUsers(users)
+
+        try {
+          const res = await api.post(`/api/addresses/${id}/default`)
+          const saved = res.data
+          const updatedAddresses = (user.addresses || []).map((addr) => (addr.id === saved.id ? saved : { ...addr, isDefault: false }))
+          const updatedUser = { ...user, addresses: updatedAddresses }
+          const users = getStoredUsers()
+          if (users[user.email]) {
+            users[user.email].user = updatedUser
+            saveStoredUsers(users)
+          }
+          set({ user: updatedUser })
+          return
+        } catch (e) {
+          const updatedAddresses = (user.addresses || []).map((addr) => ({ ...addr, isDefault: addr.id === id }))
+          const updatedUser = { ...user, addresses: updatedAddresses }
+          const users = getStoredUsers()
+          if (users[user.email]) {
+            users[user.email].user = updatedUser
+            saveStoredUsers(users)
+          }
+          set({ user: updatedUser })
         }
-        set({ user: updatedUser })
       },
     }),
     {
