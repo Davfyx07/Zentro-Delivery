@@ -26,7 +26,6 @@ import com.repository.UserRepository;
 import com.request.ForgotPasswordRequest;
 import com.request.GoogleAuthRequest;
 import com.request.LoginRequest;
-// Reset password request DTO removed as reset functionality is disabled
 import com.response.AuthResponse;
 import com.service.CustomerUserDetailsService;
 
