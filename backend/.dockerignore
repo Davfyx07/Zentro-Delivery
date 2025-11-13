@@ -1,8 +1,6 @@
 target
 .git
 .gitignore
-.mvn
-mvnw
 node_modules
 frontend/.next
 logs
