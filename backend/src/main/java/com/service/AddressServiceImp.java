@@ -39,6 +39,11 @@ public class AddressServiceImp implements AddressService {
         }
 
         address.setCustomer(user);
+        // Si es la primera dirección, hacerla default
+        List<Address> existingAddresses = addressRepository.findByCustomerId(user.getId());
+        if(existingAddresses.isEmpty()) {
+            address.setIsDefault(true);
+        }
 
         // If the incoming address requests to be default, clear previous defaults
         if (Boolean.TRUE.equals(address.getIsDefault())) {

@@ -3,6 +3,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import api from "@/lib/api"
+import { Console } from "console"
 
 // MODELO DE DIRECCIÓN
 export interface Address {
@@ -122,27 +123,25 @@ export const useAuth = create<AuthState>()(
         if (!user) return
 
         try {
+          //1. Llamar API para guardar dirección en BD
           const res = await api.post('/api/addresses', address)
-          const saved = res.data
+          const saved = res.data //direccion con ID desde backend
+
+          //2. Actualizar estado local con estados del servidor
           const updatedAddresses = [...(user.addresses || []), saved]
           const updatedUser = { ...user, addresses: updatedAddresses }
+
+          //3. Guardar en local storage para persistencia
           const users = getStoredUsers()
           if (users[user.email]) {
             users[user.email].user = updatedUser
             saveStoredUsers(users)
           }
+
           set({ user: updatedUser })
-          return
-        } catch (e) {
-          // Fallback to local storage update for offline/failed requests
-          const updatedAddresses = [...(user.addresses || []), address]
-          const updatedUser = { ...user, addresses: updatedAddresses }
-          const users = getStoredUsers()
-          if (users[user.email]) {
-            users[user.email].user = updatedUser
-            saveStoredUsers(users)
-          }
-          set({ user: updatedUser })
+        } catch (error) {
+          console.error("Error al agregar dirección:", error)
+          throw error
         }
       },
 
