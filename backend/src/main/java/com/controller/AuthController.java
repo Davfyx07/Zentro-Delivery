@@ -197,10 +197,11 @@ public class AuthController {
         // Eliminar la cookie
         Cookie jwtCookie = new Cookie("zentro_jwt", null);
         jwtCookie.setHttpOnly(true);
-        jwtCookie.setSecure(true);
+        // For local development we keep Secure=false so cookie is removed over HTTP
+        jwtCookie.setSecure(false);
         jwtCookie.setPath("/");
         jwtCookie.setMaxAge(0); // Expira inmediatamente
-        jwtCookie.setAttribute("SameSite", "Strict");
+        jwtCookie.setAttribute("SameSite", "None");
         response.addCookie(jwtCookie);
         
         // Limpiar el contexto de seguridad
@@ -243,8 +244,9 @@ public class AuthController {
         jwtCookie.setSecure(false);
         jwtCookie.setPath("/");
         jwtCookie.setMaxAge(86400);    // 1 día en segundos
-        // Use Lax so the cookie is sent on top-level navigations and reloads; change to 'Strict' or 'None' as appropriate in prod.
-        jwtCookie.setAttribute("SameSite", "Lax"); // Protección CSRF
+        // For cross-site XHR (frontend on different port) set SameSite=None.
+        // In production set Secure=true and SameSite=None when using HTTPS.
+        jwtCookie.setAttribute("SameSite", "None");
 
         response.addCookie(jwtCookie);
     }

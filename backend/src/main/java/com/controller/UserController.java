@@ -1,6 +1,8 @@
 package com.controller;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,8 @@ import com.request.UpdateProfileRequest;
 import com.service.CloudinaryService;
 import com.service.UserService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -31,15 +35,40 @@ public class UserController {
     private CloudinaryService cloudinaryService;
 
     @GetMapping("/profile")
-    public ResponseEntity<User> findUserByJwtToken(@RequestHeader("Authorization") String jwt) throws Exception {
+    public ResponseEntity<User> findUserByJwtToken(@RequestHeader(name = "Authorization", required = false) String jwt,
+                                                   HttpServletRequest request) throws Exception {
+        if (jwt == null || jwt.isEmpty()) {
+            if (request.getCookies() != null) {
+                for (jakarta.servlet.http.Cookie c : request.getCookies()) {
+                    if ("zentro_jwt".equals(c.getName())) {
+                        jwt = URLDecoder.decode(c.getValue(), StandardCharsets.UTF_8);
+                        break;
+                    }
+                }
+            }
+        }
+
         User user = userService.findUserByJwtToken(jwt);
         return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
     @PutMapping("/profile")
     public ResponseEntity<User> updateUserProfile(
-            @RequestHeader("Authorization") String jwt,
-            @RequestBody UpdateProfileRequest request) throws Exception {
+            @RequestHeader(name = "Authorization", required = false) String jwt,
+            @RequestBody UpdateProfileRequest request,
+            HttpServletRequest httpRequest) throws Exception {
+
+        if (jwt == null || jwt.isEmpty()) {
+            if (httpRequest.getCookies() != null) {
+                for (jakarta.servlet.http.Cookie c : httpRequest.getCookies()) {
+                    if ("zentro_jwt".equals(c.getName())) {
+                        jwt = URLDecoder.decode(c.getValue(), StandardCharsets.UTF_8);
+                        break;
+                    }
+                }
+            }
+        }
+
         User user = userService.findUserByJwtToken(jwt);
         
         // Actualizar solo los campos permitidos
@@ -62,9 +91,21 @@ public class UserController {
 
     @PostMapping("/profile/avatar")
     public ResponseEntity<?> uploadAvatar(
-            @RequestHeader("Authorization") String jwt,
-            @RequestParam("file") MultipartFile file) {
+            @RequestHeader(name = "Authorization", required = false) String jwt,
+            @RequestParam("file") MultipartFile file,
+            HttpServletRequest httpRequest) {
         try {
+            if (jwt == null || jwt.isEmpty()) {
+                if (httpRequest.getCookies() != null) {
+                    for (jakarta.servlet.http.Cookie c : httpRequest.getCookies()) {
+                        if ("zentro_jwt".equals(c.getName())) {
+                            jwt = URLDecoder.decode(c.getValue(), StandardCharsets.UTF_8);
+                            break;
+                        }
+                    }
+                }
+            }
+
             User user = userService.findUserByJwtToken(jwt);
             
             // Validar archivo
