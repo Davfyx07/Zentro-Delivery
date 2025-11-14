@@ -194,14 +194,13 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<MessageResponse> logout(HttpServletResponse response) {
-        // Eliminar la cookie
+    // Eliminar la cookie
         Cookie jwtCookie = new Cookie("zentro_jwt", null);
         jwtCookie.setHttpOnly(true);
-        // For local development we keep Secure=false so cookie is removed over HTTP
         jwtCookie.setSecure(false);
         jwtCookie.setPath("/");
         jwtCookie.setMaxAge(0); // Expira inmediatamente
-        jwtCookie.setAttribute("SameSite", "None");
+        jwtCookie.setAttribute("SameSite", "Lax");
         response.addCookie(jwtCookie);
         
         // Limpiar el contexto de seguridad
@@ -236,18 +235,12 @@ public class AuthController {
 
     // Método helper para establecer la cookie JWT (valor URL-encoded, sin prefijo 'Bearer ')
     private void setJwtCookie(HttpServletResponse response, String jwt) {
-        String encoded = java.net.URLEncoder.encode(jwt, java.nio.charset.StandardCharsets.UTF_8);
-        Cookie jwtCookie = new Cookie("zentro_jwt", encoded);
-        jwtCookie.setHttpOnly(true);  // NO accesible desde JavaScript
-        // For local development (http://localhost) we must NOT set Secure=true otherwise the browser won't send the cookie.
-        // In production (HTTPS) you should set Secure=true. Adjust by env if needed.
-        jwtCookie.setSecure(false);
+        Cookie jwtCookie = new Cookie("zentro_jwt", jwt); // SIN codificar
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setSecure(false); // false para desarrollo local
         jwtCookie.setPath("/");
-        jwtCookie.setMaxAge(86400);    // 1 día en segundos
-        // For cross-site XHR (frontend on different port) set SameSite=None.
-        // In production set Secure=true and SameSite=None when using HTTPS.
-        jwtCookie.setAttribute("SameSite", "None");
-
+        jwtCookie.setMaxAge(86400); // 1 día
+        jwtCookie.setAttribute("SameSite", "Lax"); // Cambia a Lax para desarrollo
         response.addCookie(jwtCookie);
     }
 

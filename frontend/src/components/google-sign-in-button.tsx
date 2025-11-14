@@ -35,48 +35,47 @@ export function GoogleSignInButton({ onSuccess, onError }: GoogleSignInButtonPro
         const userInfo = userInfoResponse.data
 
         // Enviar al backend
-        const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/google`,
-          {
-            email: userInfo.email,
-            name: userInfo.name,
-            profileImage: userInfo.picture,
-            providerId: userInfo.sub,
-            idToken: tokenResponse.access_token,
-          }
-        )
-
-        // Guardar JWT en localStorage
-        localStorage.setItem("zentro_jwt", response.data.jwt)
-        
-        // Actualizar el estado de usuario en Zustand
-        setUser({
-          id: userInfo.sub,
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/google`,
+        {
           email: userInfo.email,
           name: userInfo.name,
           profileImage: userInfo.picture,
-          role: response.data.role === "ROLE_CUSTOMER" ? "customer" : "owner",
-          createdAt: new Date().toISOString(),
-        })
+          providerId: userInfo.sub,
+          idToken: tokenResponse.access_token,
+        },
+        {
+          withCredentials: true // IMPORTANTE
+        }
+      )
+
+        // Guardar JWT en localStorage
+        //localStorage.setItem("zentro_jwt", response.data.jwt)
         
-        if (onSuccess) onSuccess()
-        
-        // Cambiar mensaje antes de redirigir
-        setLoadingMessage("¡Éxito! Redirigiendo...")
-        
-        // Redirigir
-        setTimeout(() => {
-          router.push("/")
-          router.refresh()
-        }, 500)
-      } catch (error: any) {
-        console.error("Error en autenticación con Google:", error)
-        console.error("Response data:", error.response?.data)
-        console.error("Response status:", error.response?.status)
-        const errorMessage = error.response?.data?.message || error.response?.data || "Error al iniciar sesión con Google"
-        if (onError) onError(errorMessage)
-      } finally {
-        setIsLoading(false)
+        // Actualizar el estado de usuario en Zustand
+        setUser({
+        id: userInfo.sub,
+        email: userInfo.email,
+        name: userInfo.name,
+        profileImage: userInfo.picture,
+        role: response.data.role === "ROLE_CUSTOMER" ? "customer" : "owner",
+        createdAt: new Date().toISOString(),
+      })
+      
+      if (onSuccess) onSuccess()
+      
+      setLoadingMessage("¡Éxito! Redirigiendo...")
+      
+      setTimeout(() => {
+        router.push("/")
+        router.refresh()
+      }, 500)
+    } catch (error: any) {
+      console.error("Error en autenticación con Google:", error)
+      const errorMessage = error.response?.data?.message || "Error al iniciar sesión con Google"
+      if (onError) onError(errorMessage)
+    } finally {
+      setIsLoading(false)
       }
     },
     onError: () => {

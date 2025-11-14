@@ -68,6 +68,7 @@ export const useAuth = create<AuthState>()(
         try {
           const res = await api.post('/auth/signin', { email, password })
           const data = res.data
+
           const loadedUser: User = {
             id: data.email,
             email: data.email,
@@ -80,19 +81,20 @@ export const useAuth = create<AuthState>()(
           }
           set({ user: loadedUser, isInitialized: true })
           return true
-        } catch (e) {
-          return false
+        } catch (error: any) {
+          console.error("Login failed:", error)
+          throw new Error(error?.response?.data?.message || "Error al inicar sesión")
         }
       },
 
       initialize: async () => {
-        // If already initialized, skip
         if (get().isInitialized) return
-        set({ isLoading: true })
-        try {
-          // Try to fetch profile from backend using cookie-based auth
+
+        set ({ isLoading: true })
+        try{
           const res = await api.get('/api/users/profile')
           const data = res.data
+
           const loadedUser: User = {
             id: data.email,
             email: data.email,
@@ -103,12 +105,14 @@ export const useAuth = create<AuthState>()(
             profileImage: data.profileImage,
             createdAt: new Date().toISOString(),
           }
+
           set({ user: loadedUser, isInitialized: true })
-        } catch (e) {
-          // Not authenticated or error: mark initialized but leave user null
+
+        }catch(error){
+          console.error("No authenticated session found", error)
           set({ user: null, isInitialized: true })
-        } finally {
-          set({ isLoading: false })
+        } finally{
+          set ({ isLoading: false })
         }
       },
 
@@ -133,10 +137,11 @@ export const useAuth = create<AuthState>()(
       logout: async () => {
         try {
           await api.post('/auth/logout')
+          set({ user: null, isInitialized: false })
         } catch (e) {
-          // ignore errors
+          console.error("Logout failed:", e)
+          set({ user: null, isInitialized: true }) // limpiar estado local de todos modos
         }
-        set({ user: null })
       },
 
       updateProfile: (data) => {

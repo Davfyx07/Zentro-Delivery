@@ -6,7 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 // Create axios instance with default config
 export const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true, // CRÍTICO: Envía cookies automáticamente
+  withCredentials: true, // Envía cookies automáticamente
   headers: {
     'Content-Type': 'application/json',
   },
@@ -25,6 +25,14 @@ api.interceptors.response.use(
     }
     return Promise.reject(error)
   }
+)
+
+api.interceptors.request.use(
+  (config) => {
+    // NO agregues Authorization header aquí - el backend usa cookies
+    return config
+  },
+  (error) => Promise.reject(error)
 )
 
 // API endpoints matching backend
