@@ -53,9 +53,8 @@ public class AuthController {
     private CartRepository cartRepository;
     
     @PostMapping("/signup")
-    public ResponseEntity<AuthResponse> createUserHandler(@RequestBody User user) {
-        // Implement user creation logic
-        User  isEmailExist = userRepository.findByEmail(user.getEmail());
+    public ResponseEntity<AuthResponse> createUserHandler(@RequestBody User user, HttpServletResponse response) {
+        User isEmailExist = userRepository.findByEmail(user.getEmail());
         if (isEmailExist != null) {
             throw new RuntimeException("Email is already used with another account");
         }
@@ -65,7 +64,7 @@ public class AuthController {
         createdUser.setFullName(user.getFullName());
         createdUser.setRole(user.getRole());
         createdUser.setPassword(passwordEncoder.encode(user.getPassword()));
-        createdUser.setProvider("LOCAL"); // Establecer provider como LOCAL
+        createdUser.setProvider("LOCAL");
 
         User savedUser = userRepository.save(createdUser);
 
@@ -77,8 +76,11 @@ public class AuthController {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         String jwt = jwtProvider.generateToken(authentication);
+        
+        // Establecer cookie HttpOnly
+        setJwtCookie(response, jwt);
+        
         AuthResponse authResponse = new AuthResponse();
-        authResponse.setJwt(jwt);
         authResponse.setMessage("User created successfully");
         authResponse.setRole(savedUser.getRole());
         authResponse.setFullName(savedUser.getFullName());
@@ -88,59 +90,46 @@ public class AuthController {
     }
 
     @PostMapping("/signin")
-    public ResponseEntity<AuthResponse> singnin(@RequestBody LoginRequest req, HttpServletResponse response) {
+    public ResponseEntity<AuthResponse> signin(@RequestBody LoginRequest req, HttpServletResponse response) {
         String username = req.getEmail();
         String password = req.getPassword();
 
-        Authentication authentication = aunthenticate(username, password);
+        Authentication authentication = authenticate(username, password);
 
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-        String role = authorities.isEmpty()?null:authorities.iterator().next().getAuthority(); // Obtener el primer rol
+        String role = authorities.isEmpty() ? null : authorities.iterator().next().getAuthority();
 
-        // Obtener el usuario desde la base de datos para obtener su información
         User user = userRepository.findByEmail(username);
 
         String jwt = jwtProvider.generateToken(authentication);
         
-
-        Cookie jwtCookie = new Cookie("zentro_jwt", jwt);
-        jwtCookie.setHttpOnly(true);  // NO accesible desde JavaScript
-        jwtCookie.setSecure(true);     // Solo HTTPS en producción
-        jwtCookie.setPath("/");
-        jwtCookie.setMaxAge(86400);    // 1 día en segundos
-        jwtCookie.setAttribute("SameSite", "Strict"); // Protección CSRF
-        
-        response.addCookie(jwtCookie);
+        // Establecer cookie HttpOnly
+        setJwtCookie(response, jwt);
 
         AuthResponse authResponse = new AuthResponse();
-        authResponse.setMessage("User signed in successfully"); // Mensaje de inicio de sesión exitoso
+        authResponse.setMessage("User signed in successfully");
         authResponse.setRole(USER_ROLE.valueOf(role));
         authResponse.setFullName(user.getFullName());
         authResponse.setEmail(user.getEmail());
 
         return new ResponseEntity<>(authResponse, HttpStatus.OK);
-
     }
 
     @PostMapping("/google")
-    public ResponseEntity<AuthResponse> googleAuth(@RequestBody GoogleAuthRequest req) {
+    public ResponseEntity<AuthResponse> googleAuth(@RequestBody GoogleAuthRequest req, HttpServletResponse response) {
         try {
-            // Buscar usuario por email
             User existingUser = userRepository.findByEmail(req.getEmail());
             
             if (existingUser != null) {
-                // Usuario existe - verificar que sea cuenta de Google
                 if (!"GOOGLE".equals(existingUser.getProvider())) {
                     throw new RuntimeException("Email already registered with email/password. Please use regular login.");
                 }
                 
-                // Actualizar foto de perfil si cambió
                 if (req.getProfileImage() != null && !req.getProfileImage().equals(existingUser.getProfileImage())) {
                     existingUser.setProfileImage(req.getProfileImage());
                     userRepository.save(existingUser);
                 }
                 
-                // Generar JWT
                 Authentication authentication = new UsernamePasswordAuthenticationToken(
                     existingUser.getEmail(), 
                     null, 
@@ -151,15 +140,18 @@ public class AuthController {
                 
                 String jwt = jwtProvider.generateToken(authentication);
                 
+                // Establecer cookie HttpOnly
+                    setJwtCookie(response, jwt);
+                
                 AuthResponse authResponse = new AuthResponse();
-                authResponse.setJwt(jwt);
                 authResponse.setMessage("Google sign in successful");
                 authResponse.setRole(existingUser.getRole());
+                authResponse.setFullName(existingUser.getFullName());
+                authResponse.setEmail(existingUser.getEmail());
                 
                 return new ResponseEntity<>(authResponse, HttpStatus.OK);
                 
             } else {
-                // Usuario nuevo - crear cuenta con Google
                 User newUser = new User();
                 newUser.setEmail(req.getEmail());
                 newUser.setFullName(req.getName());
@@ -167,16 +159,14 @@ public class AuthController {
                 newUser.setProviderId(req.getProviderId());
                 newUser.setProfileImage(req.getProfileImage());
                 newUser.setRole(USER_ROLE.ROLE_CUSTOMER);
-                newUser.setPassword(null); // Sin password para usuarios de Google
+                newUser.setPassword(null);
                 
                 User savedUser = userRepository.save(newUser);
                 
-                // Crear carrito para el nuevo usuario
                 Cart cart = new Cart();
                 cart.setCustomer(savedUser);
                 cartRepository.save(cart);
                 
-                // Generar JWT
                 Authentication authentication = new UsernamePasswordAuthenticationToken(
                     savedUser.getEmail(), 
                     null,
@@ -185,10 +175,14 @@ public class AuthController {
                 
                 String jwt = jwtProvider.generateToken(authentication);
                 
+                // Establecer cookie HttpOnly
+                setJwtCookie(response, jwt);
+                
                 AuthResponse authResponse = new AuthResponse();
-                authResponse.setJwt(jwt);
                 authResponse.setMessage("Google account created successfully");
                 authResponse.setRole(savedUser.getRole());
+                authResponse.setFullName(savedUser.getFullName());
+                authResponse.setEmail(savedUser.getEmail());
                 
                 return new ResponseEntity<>(authResponse, HttpStatus.CREATED);
             }
@@ -198,58 +192,72 @@ public class AuthController {
         }
     }
 
-    private Authentication aunthenticate(String username, String password) {
-
-        UserDetails userDetails = customerUserDetailsService.loadUserByUsername(username);
-
-        if(userDetails == null) {
-            throw new BadCredentialsException("Invalid username"); // Verifica el nombre de usuario
-        }
-        
-        // Verificar si el usuario usa Google OAuth
-        User user = userRepository.findByEmail(username);
-        if(user != null && "GOOGLE".equals(user.getProvider())) {
-            throw new BadCredentialsException("This account uses Google Sign In. Please sign in with Google.");
-        }
-        
-        if(!passwordEncoder.matches(password, userDetails.getPassword())) { // Verifica la contraseña
-            throw new BadCredentialsException("Invalid password");
-        }
-        return new UsernamePasswordAuthenticationToken(
-                userDetails, //  Principal (quién es el usuario)
-                null, //  Credentials (la contraseña - ya no la necesitamos)
-                userDetails.getAuthorities()  //  Authorities (roles/permisos del usuario
-        );
-    }
-
-
-
+    @PostMapping("/logout")
     public ResponseEntity<MessageResponse> logout(HttpServletResponse response) {
+        // Eliminar la cookie
         Cookie jwtCookie = new Cookie("zentro_jwt", null);
         jwtCookie.setHttpOnly(true);
         jwtCookie.setSecure(true);
         jwtCookie.setPath("/");
         jwtCookie.setMaxAge(0); // Expira inmediatamente
+        jwtCookie.setAttribute("SameSite", "Strict");
         response.addCookie(jwtCookie);
+        
+        // Limpiar el contexto de seguridad
+        SecurityContextHolder.clearContext();
         
         MessageResponse res = new MessageResponse();
         res.setMessage("Logged out successfully");
         return ResponseEntity.ok(res);
     }
 
-    
+    private Authentication authenticate(String username, String password) {
+        UserDetails userDetails = customerUserDetailsService.loadUserByUsername(username);
+
+        if(userDetails == null) {
+            throw new BadCredentialsException("Invalid username");
+        }
+        
+        User user = userRepository.findByEmail(username);
+        if(user != null && "GOOGLE".equals(user.getProvider())) {
+            throw new BadCredentialsException("This account uses Google Sign In. Please sign in with Google.");
+        }
+        
+        if(!passwordEncoder.matches(password, userDetails.getPassword())) {
+            throw new BadCredentialsException("Invalid password");
+        }
+        return new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities()
+        );
+    }
+
+    // Método helper para establecer la cookie JWT (valor URL-encoded, sin prefijo 'Bearer ')
+    private void setJwtCookie(HttpServletResponse response, String jwt) {
+        String encoded = java.net.URLEncoder.encode(jwt, java.nio.charset.StandardCharsets.UTF_8);
+        Cookie jwtCookie = new Cookie("zentro_jwt", encoded);
+        jwtCookie.setHttpOnly(true);  // NO accesible desde JavaScript
+        // For local development (http://localhost) we must NOT set Secure=true otherwise the browser won't send the cookie.
+        // In production (HTTPS) you should set Secure=true. Adjust by env if needed.
+        jwtCookie.setSecure(false);
+        jwtCookie.setPath("/");
+        jwtCookie.setMaxAge(86400);    // 1 día en segundos
+        // Use Lax so the cookie is sent on top-level navigations and reloads; change to 'Strict' or 'None' as appropriate in prod.
+        jwtCookie.setAttribute("SameSite", "Lax"); // Protección CSRF
+
+        response.addCookie(jwtCookie);
+    }
+
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordRequest request) {
-        // Funcionalidad temporalmente deshabilitada
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body("Funcionalidad de restablecer contraseña temporalmente deshabilitada");
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+            .body("Funcionalidad de restablecer contraseña temporalmente deshabilitada");
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<String> resetPassword() {
-        // Funcionalidad temporalmente deshabilitada
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body("Funcionalidad de restablecer contraseña temporalmente deshabilitada");
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+            .body("Funcionalidad de restablecer contraseña temporalmente deshabilitada");
     }
-
-
-    
 }

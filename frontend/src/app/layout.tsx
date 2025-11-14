@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { ConditionalNavbar } from "@/components/conditional-navbar"
+import { AuthInitializer } from "@/components/auth-initializer"
 import { ThemeProvider } from "@/providers/theme-provider"
 import { GoogleOAuthProvider } from "@react-oauth/google"
 import { Toaster } from "@/components/ui/toaster"
@@ -46,6 +47,8 @@ export default function RootLayout({
       <body className={`font-sans antialiased`}>
         <GoogleOAuthProvider clientId={googleClientId}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            {/* Inicializar sesión desde cookie */}
+            <AuthInitializer />
             <ConditionalNavbar />
             {children}
             <Toaster />

@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
@@ -10,19 +9,16 @@ import { Mail, Lock, AlertCircle, ArrowLeft, ChefHat, UtensilsCrossed, ShoppingB
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { GoogleSignInButton } from "@/components/google-sign-in-button"
-import axios from "axios"
 
 export default function LoginPage() {
   const router = useRouter()
-  const { setUser } = useAuth()
+  const { login } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false);
-
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -37,34 +33,15 @@ export default function LoginPage() {
     }
 
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/signin`,
-        { email, password },
-        { withCredentials: true }
-      )
-
-      // Guardar JWT
-      //localStorage.setItem("zentro_jwt", response.data.jwt)
-
-      // Actualizar el estado de usuario
-      setUser({
-        id: response.data.email,
-        email: response.data.email,
-        name: response.data.fullName,
-        role: response.data.role === "ROLE_CUSTOMER" ? "customer" : "owner",
-        createdAt: new Date().toISOString(),
-      })
-
+      // La cookie se establece automáticamente por el backend
+      await login(email, password)
+      
+      // Redirigir al home
       router.push("/")
+      router.refresh()
     } catch (error: any) {
       console.error("Error en login:", error)
-      const status = error.response?.status
-      const data = error.response?.data
-      if (status === 401 || status === 403) {
-        setError("Email o contraseña incorrectos")
-      } else {
-        setError(data?.message || (typeof data === "string" ? data : "Ocurrió un error. Intenta de nuevo"))
-      }
+      setError(error.message || "Error al iniciar sesión")
     } finally {
       setIsLoading(false)
     }
@@ -82,7 +59,6 @@ export default function LoginPage() {
 
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-center items-center w-full px-12 text-white">
-          {/* Logo */}
           <div className="mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm mb-6">
               <span className="text-white font-bold text-4xl">Z</span>
@@ -91,7 +67,6 @@ export default function LoginPage() {
             <p className="text-xl text-white/90 italic">Deliver Excellence, Elevate Every Bite Instantly</p>
           </div>
 
-          {/* Illustration with Icons */}
           <div className="mt-12 grid grid-cols-3 gap-8">
             <div className="flex flex-col items-center gap-3 p-6 bg-white/10 backdrop-blur-sm rounded-2xl">
               <ChefHat className="w-12 h-12" />
@@ -107,7 +82,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Testimonial or Feature */}
           <div className="mt-12 max-w-md text-center">
             <p className="text-lg text-white/90">
               "La mejor experiencia de pedidos en línea. Rápido, fácil y confiable."
@@ -119,7 +93,6 @@ export default function LoginPage() {
       {/* Right Side - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-8 bg-background dark:bg-gray-900">
         <div className="w-full max-w-md">
-          {/* Back Button */}
           <Link 
             href="/" 
             className="inline-flex items-center gap-2 text-foreground dark:text-white hover:text-primary mb-6 transition-colors group"
@@ -128,7 +101,6 @@ export default function LoginPage() {
             <span className="font-medium">Volver al inicio</span>
           </Link>
 
-          {/* Mobile Logo - Only visible on small screens */}
           <div className="lg:hidden text-center mb-6">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary mb-3">
               <span className="text-white font-bold text-xl">Z</span>
@@ -136,7 +108,6 @@ export default function LoginPage() {
             <h1 className="text-2xl font-bold text-foreground dark:text-white">Zentro</h1>
           </div>
 
-          {/* Header */}
           <div className="mb-6">
             <h2 className="text-2xl lg:text-3xl font-bold text-foreground dark:text-white mb-1">
               Inicia sesión
@@ -146,9 +117,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email Input */}
             <div className="space-y-1.5">
               <Label htmlFor="email">Correo Electrónico</Label>
               <div className="relative">
@@ -164,7 +133,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Password Input */}
             <div className="space-y-1.5">
               <Label htmlFor="password">Contraseña</Label>
               <div className="relative">
@@ -192,13 +160,11 @@ export default function LoginPage() {
                 </Button>
               </div>
 
-              {/* Olvidaste contraseña (temporalmente deshabilitado) */}
               <div className="text-right mt-1">
-                <p className="text-sm text-muted-foreground">¿Olvidaste tu contraseña? Actualmente esta funcionalidad está temporalmente deshabilitada. Si necesitas ayuda, contacta al soporte.</p>
+                <p className="text-sm text-muted-foreground">¿Olvidaste tu contraseña? Actualmente esta funcionalidad está temporalmente deshabilitada.</p>
               </div>
             </div>
 
-            {/* Error Message */}
             {error && (
               <div className="flex items-center gap-2 error-label">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -206,7 +172,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Submit Button */}
             <Button
               type="submit"
               disabled={isLoading}
@@ -216,20 +181,17 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* Divider */}
           <div className="my-5 flex items-center gap-3">
             <div className="flex-1 h-px bg-border dark:bg-gray-700"></div>
             <span className="text-xs text-muted-foreground dark:text-gray-500 font-medium">O continúa con</span>
             <div className="flex-1 h-px bg-border dark:bg-gray-700"></div>
           </div>
 
-          {/* Google Sign In Button */}
           <GoogleSignInButton 
             onSuccess={() => router.push("/")}
             onError={(error) => setError(error)}
           />
 
-          {/* Sign Up Link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground dark:text-gray-400">
               ¿No tienes cuenta?{" "}

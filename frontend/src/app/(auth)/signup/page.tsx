@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
@@ -11,13 +10,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { GoogleSignInButton } from "@/components/google-sign-in-button"
-import axios from "axios"
-import { validateHeaderName } from "http"
 
 export default function SignupPage() {
   const router = useRouter()
-  const { setUser } = useAuth()
-  const [showPassword, setShowPassword] = useState(false);
+  const { signup } = useAuth()
+  const [showPassword, setShowPassword] = useState(false)
   const [showPasswordRules, setShowPasswordRules] = useState(false)
 
   const [formData, setFormData] = useState({
@@ -37,7 +34,6 @@ export default function SignupPage() {
       [name]: value,
     }))
   }
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -70,104 +66,72 @@ export default function SignupPage() {
       return
     }
 
-    if(!validatePasswordStrength(formData.password)) {
+    if (!validatePasswordStrength(formData.password)) {
       setError("La contraseña debe incluir mayúsculas, minúsculas, números y caracteres especiales")
       setIsLoading(false)
       return
     }
 
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/signup`,
-        {
-          fullName: formData.name,
-          email: formData.email,
-          password: formData.password,
-          role: "ROLE_CUSTOMER",
-        }
-      )
-
-      // Guardar JWT
-      localStorage.setItem("zentro_jwt", response.data.jwt)
-
-      // Actualizar el estado de usuario
-      setUser({
-        id: response.data.email,
-        email: response.data.email,
-        name: response.data.fullName,
-        role: response.data.role === "ROLE_CUSTOMER" ? "customer" : "owner",
-        createdAt: new Date().toISOString(),
-      })
+      // La cookie se establece automáticamente por el backend
+      await signup(formData.email, formData.password, formData.name)
 
       setSuccess(true)
       setTimeout(() => {
         router.push("/")
+        router.refresh()
       }, 1500)
     } catch (error: any) {
       console.error("Error en registro:", error)
-      const status = error.response?.status
-      const data = error.response?.data
-      // Map common server statuses to friendly messages
-      if (status === 409) {
-        setError("Este email ya está registrado")
-      } else {
-        setError(data?.message || (typeof data === "string" ? data : "Ocurrió un error. Intenta de nuevo"))
-      }
+      setError(error.message || "Error al crear cuenta")
     } finally {
       setIsLoading(false)
     }
   }
 
   function validatePasswordStrength(password: string) {
-    const minLength = password.length >= 8;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?|]/.test(password);
-    return minLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
+    const minLength = password.length >= 8
+    const hasUpperCase = /[A-Z]/.test(password)
+    const hasLowerCase = /[a-z]/.test(password)
+    const hasNumber = /[0-9]/.test(password)
+    const hasSpecialChar = /[!@#$%^&*(),.?|]/.test(password)
+    return minLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar
   }
 
-  
+  const validateRules = {
+    minLength: (pw: string) => pw.length >= 8,
+    hasUpper: (pw: string) => /[A-Z]/.test(pw),
+    hasLower: (pw: string) => /[a-z]/.test(pw),
+    hasNumber: (pw: string) => /[0-9]/.test(pw),
+    hasSpecial: (pw: string) => /[!@#$%^&*(),.?|]/.test(pw),
+    passwordsMatch: (pw: string, cpw: string) => pw === cpw && pw.length > 0,
+  }
 
-// Funciones para validar cada regla
-const validateRules = {
-  minLength: (pw: string) => pw.length >= 8,
-  hasUpper: (pw: string) => /[A-Z]/.test(pw),
-  hasLower: (pw: string) => /[a-z]/.test(pw),
-  hasNumber: (pw: string) => /[0-9]/.test(pw),
-  hasSpecial: (pw: string) => /[!@#$%^&*(),.?|]/.test(pw),
-  passwordsMatch: (pw: string, cpw: string) => pw === cpw && pw.length > 0,
-}
-
-const hasAnyError = !(
-  validateRules.minLength(formData.password) &&
-  validateRules.hasUpper(formData.password) &&
-  validateRules.hasLower(formData.password) &&
-  validateRules.hasNumber(formData.password) &&
-  validateRules.hasSpecial(formData.password) &&
-  validateRules.passwordsMatch(formData.password, formData.confirmPassword)
-);
+  const hasAnyError = !(
+    validateRules.minLength(formData.password) &&
+    validateRules.hasUpper(formData.password) &&
+    validateRules.hasLower(formData.password) &&
+    validateRules.hasNumber(formData.password) &&
+    validateRules.hasSpecial(formData.password) &&
+    validateRules.passwordsMatch(formData.password, formData.confirmPassword)
+  )
 
   useEffect(() => {
     if (hasAnyError) {
-      setShowPasswordRules(true);
-    } else setShowPasswordRules(false);
-  }, [formData.password]);
-
+      setShowPasswordRules(true)
+    } else setShowPasswordRules(false)
+  }, [formData.password])
 
   return (
     <main className="min-h-screen bg-background dark:bg-gray-900 flex">
       {/* Left Side - Image/Illustration Section */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-secondary via-secondary/90 to-primary relative overflow-hidden">
-        {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-64 h-64 bg-white rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 right-20 w-96 h-96 bg-white rounded-full blur-3xl"></div>
         </div>
 
-        {/* Content */}
         <div className="relative z-10 flex flex-col justify-center items-center w-full px-12 text-white">
-          {/* Logo */}
           <div className="mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm mb-6">
               <span className="text-white font-bold text-4xl">Z</span>
@@ -176,7 +140,6 @@ const hasAnyError = !(
             <p className="text-xl text-white/90">Descubre una nueva forma de disfrutar la comida</p>
           </div>
 
-          {/* Features */}
           <div className="mt-12 space-y-6 max-w-md">
             <div className="flex items-start gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl">
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
@@ -212,7 +175,6 @@ const hasAnyError = !(
       {/* Right Side - Signup Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-6 bg-background dark:bg-gray-900">
         <div className="w-full max-w-md">
-          {/* Back Button */}
           <Link 
             href="/" 
             className="inline-flex items-center gap-2 text-foreground dark:text-white hover:text-primary mb-4 transition-colors group"
@@ -221,7 +183,6 @@ const hasAnyError = !(
             <span className="font-medium">Volver al inicio</span>
           </Link>
 
-          {/* Mobile Logo - Only visible on small screens */}
           <div className="lg:hidden text-center mb-4">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary mb-3">
               <span className="text-white font-bold text-xl">Z</span>
@@ -229,7 +190,6 @@ const hasAnyError = !(
             <h1 className="text-2xl font-bold text-foreground dark:text-white">Zentro</h1>
           </div>
 
-          {/* Header */}
           <div className="mb-5">
             <h2 className="text-2xl lg:text-3xl font-bold text-foreground dark:text-white mb-1">
               Crear cuenta
@@ -239,7 +199,6 @@ const hasAnyError = !(
             </p>
           </div>
 
-          {/* Signup Form or Success Message */}
           {success ? (
             <div className="text-center py-8 bg-green-50 dark:bg-green-900/20 rounded-2xl border border-green-200 dark:border-green-800">
               <div className="flex justify-center mb-3">
@@ -253,7 +212,6 @@ const hasAnyError = !(
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-3.5">
-              {/* Name Input */}
               <div className="space-y-1.5">
                 <Label htmlFor="name">Nombre Completo</Label>
                 <div className="relative">
@@ -270,7 +228,6 @@ const hasAnyError = !(
                 </div>
               </div>
 
-              {/* Email Input */}
               <div className="space-y-1.5">
                 <Label htmlFor="email">Correo Electrónico</Label>
                 <div className="relative">
@@ -287,8 +244,7 @@ const hasAnyError = !(
                 </div>
               </div>
 
-              {/* Password Input */}
-             <div className="space-y-1.5">
+              <div className="space-y-1.5">
                 <Label htmlFor="password">Contraseña</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -302,24 +258,21 @@ const hasAnyError = !(
                     className="pl-10 pr-10"
                   />
 
-                  {/* Botón para toggle de reglas */}
                   <button
                     type="button"
                     onClick={() => setShowPasswordRules(!showPasswordRules)}
                     className="absolute right-10 top-1/2 -translate-y-1/2 p-1 rounded"
                     aria-label="Mostrar / ocultar reglas de contraseña"
                   >
-                  {showPasswordRules ? (
-                    <AlertCircle className="w-5 h-5 text-red-500" />
-                  ) : hasAnyError ? (
-                    <AlertCircle className="w-5 h-5 text-red-500" />
-                  ) : (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                  )}
+                    {showPasswordRules ? (
+                      <AlertCircle className="w-5 h-5 text-red-500" />
+                    ) : hasAnyError ? (
+                      <AlertCircle className="w-5 h-5 text-red-500" />
+                    ) : (
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                    )}
                   </button>
 
-
-                  {/* Botón para mostrar/ocultar contraseña */}
                   <Button
                     type="button"
                     variant="ghost"
@@ -360,8 +313,6 @@ const hasAnyError = !(
                 )}
               </div>
 
-
-              {/* Confirm Password Input */}
               <div className="space-y-1.5">
                 <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
                 <div className="relative">
@@ -391,7 +342,6 @@ const hasAnyError = !(
                 </div>
               </div>
 
-              {/* Error Message */}
               {error && (
                 <div className="flex items-center gap-2 error-label">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -399,7 +349,6 @@ const hasAnyError = !(
                 </div>
               )}
 
-              {/* Submit Button */}
               <Button
                 type="submit"
                 disabled={isLoading}
@@ -410,7 +359,6 @@ const hasAnyError = !(
             </form>
           )}
 
-          {/* Divider */}
           {!success && (
             <>
               <div className="my-5 flex items-center gap-3">
@@ -419,7 +367,6 @@ const hasAnyError = !(
                 <div className="flex-1 h-px bg-border dark:bg-gray-700"></div>
               </div>
 
-              {/* Google Sign In Button */}
               <GoogleSignInButton 
                 onSuccess={() => router.push("/")}
                 onError={(error) => setError(error)}
@@ -427,7 +374,6 @@ const hasAnyError = !(
             </>
           )}
 
-          {/* Login Link */}
           {!success && (
             <div className="mt-5 text-center">
               <p className="text-sm text-muted-foreground dark:text-gray-400">

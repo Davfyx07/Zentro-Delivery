@@ -30,7 +30,9 @@ export interface User {
 export interface AuthState {
   user: User | null
   isLoading: boolean
-  login: (email: string, password: string) => boolean
+  isInitialized: boolean
+  initialize: () => Promise<void>
+  login: (email: string, password: string) => Promise<boolean>
   signup: (email: string, password: string, name: string) => boolean
   logout: () => void
   updateProfile: (data: Partial<User>) => void
@@ -60,13 +62,54 @@ export const useAuth = create<AuthState>()(
     (set, get) => ({
       user: null,
       isLoading: false,
+      isInitialized: false,
 
-      login: (email, password) => {
-        const users = getStoredUsers()
-        const userData = users[email]
-        if (!userData || userData.password !== password) return false
-        set({ user: userData.user })
-        return true
+      login: async (email, password) => {
+        try {
+          const res = await api.post('/auth/signin', { email, password })
+          const data = res.data
+          const loadedUser: User = {
+            id: data.email,
+            email: data.email,
+            name: data.fullName,
+            role: data.role === 'ROLE_CUSTOMER' ? 'customer' : 'owner',
+            phone: data.phoneNumber,
+            addresses: data.addresses || [],
+            profileImage: data.profileImage,
+            createdAt: new Date().toISOString(),
+          }
+          set({ user: loadedUser, isInitialized: true })
+          return true
+        } catch (e) {
+          return false
+        }
+      },
+
+      initialize: async () => {
+        // If already initialized, skip
+        if (get().isInitialized) return
+        set({ isLoading: true })
+        try {
+          // Try to fetch profile from backend using cookie-based auth
+          const res = await api.get('/api/users/profile')
+          const data = res.data
+          const loadedUser: User = {
+            id: data.email,
+            email: data.email,
+            name: data.fullName,
+            role: data.role === 'ROLE_CUSTOMER' ? 'customer' : 'owner',
+            phone: data.phoneNumber,
+            addresses: data.addresses || [],
+            profileImage: data.profileImage,
+            createdAt: new Date().toISOString(),
+          }
+          set({ user: loadedUser, isInitialized: true })
+        } catch (e) {
+          // Not authenticated or error: mark initialized but leave user null
+          set({ user: null, isInitialized: true })
+        } finally {
+          set({ isLoading: false })
+        }
       },
 
       signup: (email, password, name) => {
@@ -87,7 +130,14 @@ export const useAuth = create<AuthState>()(
         return true
       },
 
-      logout: () => set({ user: null }),
+      logout: async () => {
+        try {
+          await api.post('/auth/logout')
+        } catch (e) {
+          // ignore errors
+        }
+        set({ user: null })
+      },
 
       updateProfile: (data) => {
         set((state) => {

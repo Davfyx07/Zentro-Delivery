@@ -1,4 +1,4 @@
-// API Configuration for backend calls
+// API Configuration for backend calls with cookie-based auth
 import axios from 'axios'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
@@ -6,19 +6,23 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 // Create axios instance with default config
 export const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true,
+  withCredentials: true, // CRÍTICO: Envía cookies automáticamente
+  headers: {
+    'Content-Type': 'application/json',
+  },
 })
 
-// Add request interceptor to include JWT token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('jwt')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
+// Add response interceptor to handle auth errors
+api.interceptors.response.use(
+  (response) => response,
   (error) => {
+    if (error.response?.status === 401) {
+      // Token expiró o es inválido
+      if (typeof window !== 'undefined') {
+        // Limpiar estado de autenticación
+        window.location.href = '/login'
+      }
+    }
     return Promise.reject(error)
   }
 )
@@ -27,6 +31,8 @@ api.interceptors.request.use(
 export const authAPI = {
   signup: (data: any) => api.post('/auth/signup', data),
   signin: (data: any) => api.post('/auth/signin', data),
+  logout: () => api.post('/auth/logout'),
+  googleAuth: (data: any) => api.post('/auth/google', data),
 }
 
 export const restaurantAPI = {
@@ -92,6 +98,20 @@ export const ingredientAPI = {
 
 export const userAPI = {
   getProfile: () => api.get('/api/users/profile'),
+  updateProfile: (data: any) => api.put('/api/users/profile', data),
+  uploadAvatar: (formData: FormData) => api.post('/api/users/profile/avatar', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }),
+}
+
+export const addressAPI = {
+  getAll: () => api.get('/api/addresses'),
+  create: (data: any) => api.post('/api/addresses', data),
+  update: (id: string, data: any) => api.put(`/api/addresses/${id}`, data),
+  delete: (id: string) => api.delete(`/api/addresses/${id}`),
+  setDefault: (id: string) => api.post(`/api/addresses/${id}/default`),
 }
 
 export default api

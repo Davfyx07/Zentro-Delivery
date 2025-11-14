@@ -37,13 +37,20 @@ public class JwtProvider {
     }
 
     public String getEmailFromJwtToken(String jwt) {
+        if (jwt == null) return null;
+        try {
+            // Strip "Bearer " if present
+            if (jwt.startsWith("Bearer ")) {
+                jwt = jwt.substring(7);
+            }
+            // URL-decode in case token was stored in a cookie encoded form
+            jwt = java.net.URLDecoder.decode(jwt, java.nio.charset.StandardCharsets.UTF_8);
 
-        jwt = jwt.substring(7);
-        Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(jwt).getBody();
-
-        String email = String.valueOf(claims.get("email"));
-        
-        return email;
+            Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(jwt).getBody();
+            return String.valueOf(claims.get("email"));
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String populateAuthorities(Collection<? extends GrantedAuthority> authorities) {
