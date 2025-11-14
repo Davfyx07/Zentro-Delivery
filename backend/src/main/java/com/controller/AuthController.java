@@ -27,7 +27,11 @@ import com.request.ForgotPasswordRequest;
 import com.request.GoogleAuthRequest;
 import com.request.LoginRequest;
 import com.response.AuthResponse;
+import com.response.MessageResponse;
 import com.service.CustomerUserDetailsService;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
 @RequestMapping("/auth")
@@ -84,7 +88,7 @@ public class AuthController {
     }
 
     @PostMapping("/signin")
-    public ResponseEntity<AuthResponse> singnin(@RequestBody LoginRequest req) {
+    public ResponseEntity<AuthResponse> singnin(@RequestBody LoginRequest req, HttpServletResponse response) {
         String username = req.getEmail();
         String password = req.getPassword();
 
@@ -98,8 +102,17 @@ public class AuthController {
 
         String jwt = jwtProvider.generateToken(authentication);
         
+
+        Cookie jwtCookie = new Cookie("zentro_jwt", jwt);
+        jwtCookie.setHttpOnly(true);  // NO accesible desde JavaScript
+        jwtCookie.setSecure(true);     // Solo HTTPS en producción
+        jwtCookie.setPath("/");
+        jwtCookie.setMaxAge(86400);    // 1 día en segundos
+        jwtCookie.setAttribute("SameSite", "Strict"); // Protección CSRF
+        
+        response.addCookie(jwtCookie);
+
         AuthResponse authResponse = new AuthResponse();
-        authResponse.setJwt(jwt);
         authResponse.setMessage("User signed in successfully"); // Mensaje de inicio de sesión exitoso
         authResponse.setRole(USER_ROLE.valueOf(role));
         authResponse.setFullName(user.getFullName());
@@ -209,6 +222,22 @@ public class AuthController {
         );
     }
 
+
+
+    public ResponseEntity<MessageResponse> logout(HttpServletResponse response) {
+        Cookie jwtCookie = new Cookie("zentro_jwt", null);
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setSecure(true);
+        jwtCookie.setPath("/");
+        jwtCookie.setMaxAge(0); // Expira inmediatamente
+        response.addCookie(jwtCookie);
+        
+        MessageResponse res = new MessageResponse();
+        res.setMessage("Logged out successfully");
+        return ResponseEntity.ok(res);
+    }
+
+    
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordRequest request) {
         // Funcionalidad temporalmente deshabilitada

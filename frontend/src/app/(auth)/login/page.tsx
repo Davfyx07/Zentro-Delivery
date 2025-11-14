@@ -39,14 +39,12 @@ export default function LoginPage() {
     try {
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/auth/signin`,
-        {
-          email,
-          password,
-        }
+        { email, password },
+        { withCredentials: true }
       )
 
       // Guardar JWT
-      localStorage.setItem("zentro_jwt", response.data.jwt)
+      //localStorage.setItem("zentro_jwt", response.data.jwt)
 
       // Actualizar el estado de usuario
       setUser({
