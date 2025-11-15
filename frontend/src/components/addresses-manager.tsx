@@ -65,12 +65,16 @@ export function AddressesManager() {
         description: "Tu dirección se actualizó correctamente",
       })
     } else {
-      addAddress({
-        id: Math.random().toString(36).substr(2, 9),
+      const newAddress = {
+        id:
+          typeof crypto !== "undefined" && typeof (crypto as any).randomUUID === "function"
+            ? (crypto as any).randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         title: formData.title,
         address: formData.address,
         isDefault: addresses.length === 0,
-      })
+      }
+      addAddress(newAddress)
       toast({
         title: "Dirección agregada",
         description: "Nueva dirección guardada correctamente",
