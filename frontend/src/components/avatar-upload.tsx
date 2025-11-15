@@ -44,7 +44,7 @@ export function AvatarUpload({ currentImage, userName, onUploadSuccess }: Avatar
       const formData = new FormData()
       formData.append("file", file)
 
-      const jwt = localStorage.getItem("zentro_jwt")
+      //const jwt = localStorage.getItem("zentro_jwt")
       const response = await api.post(
         "/api/users/profile/avatar",
         formData,
