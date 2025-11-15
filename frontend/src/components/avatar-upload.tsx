@@ -4,8 +4,7 @@ import { useState } from "react"
 import { Camera, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import axios from "axios"
-
+import api from "@/lib/api"
 interface AvatarUploadProps {
   currentImage?: string
   userName: string
@@ -46,12 +45,11 @@ export function AvatarUpload({ currentImage, userName, onUploadSuccess }: Avatar
       formData.append("file", file)
 
       const jwt = localStorage.getItem("zentro_jwt")
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/profile/avatar`,
+      const response = await api.post(
+        "/api/users/profile/avatar",
         formData,
         {
           headers: {
-            Authorization: `Bearer ${jwt}`,
             "Content-Type": "multipart/form-data",
           },
         }
