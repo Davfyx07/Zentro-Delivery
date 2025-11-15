@@ -11,7 +11,8 @@ import { Mail, Phone, User, Edit2, Check, Camera } from "lucide-react"
 import { useState, useEffect } from "react"
 import axios from "axios"
 import { useToast } from "@/hooks/use-toast"
-import { AddressesManager } from "@/components/addresses-manager"
+import  AddressesManager  from "@/components/addresses-manager"
+import api from "@/lib/api"
 
 export default function ProfilePage() {
   const { user, setUser } = useAuth()
@@ -24,46 +25,48 @@ export default function ProfilePage() {
     phoneNumber: user?.phone || "",
   })
 
-  useEffect(() => {
-    const fetchProfile = async () => {
+
+
+useEffect(() => {
+  const fetchProfile = async () => {
+    try {
+      //  Cargar perfil
+      const response = await api.get('/api/users/profile')
+
+      // Cargar direcciones
+      let addresses = []
       try {
-        const jwt = localStorage.getItem("zentro_jwt")
-        if (!jwt) return
-
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/users/profile`,
-          {
-            headers: {
-              Authorization: `Bearer ${jwt}`,
-            },
-          }
-        )
-
-        // Actualizar usuario en contexto y formulario
-        setUser({
-          id: response.data.email,
-          email: response.data.email,
-          name: response.data.fullName,
-          phone: response.data.phoneNumber,
-          addresses: response.data.addresses || [],
-          profileImage: response.data.profileImage,
-          role: response.data.role === "ROLE_CUSTOMER" ? "customer" : "owner",
-          createdAt: user?.createdAt || new Date().toISOString(),
-        })
-
-        setFormData({
-          fullName: response.data.fullName || "",
-          phoneNumber: response.data.phoneNumber || "",
-        })
-      } catch (error) {
-        console.error("Error fetching profile:", error)
-      } finally {
-        setIsFetchingProfile(false)
+        const addressRes = await api.get('/api/addresses')
+        addresses = addressRes.data || []
+        //console.log('✅ Direcciones cargadas:', addresses)
+      } catch (addrError) {
+        //console.warn('⚠️ Error cargando direcciones:', addrError)
       }
-    }
-    fetchProfile()
-  }, [])
 
+      // Actualizar usuario
+      setUser({
+        id: response.data.email,
+        email: response.data.email,
+        name: response.data.fullName,
+        phone: response.data.phoneNumber,
+        addresses: addresses, // ✅ Desde backend
+        profileImage: response.data.profileImage,
+        role: response.data.role === "ROLE_CUSTOMER" ? "customer" : "owner",
+        createdAt: user?.createdAt || new Date().toISOString(),
+      })
+
+      setFormData({
+        fullName: response.data.fullName || "",
+        phoneNumber: response.data.phoneNumber || "",
+      })
+    } catch (error) {
+      console.error("Error fetching profile:", error)
+    } finally {
+      setIsFetchingProfile(false)
+    }
+  }
+  fetchProfile()
+}, [])
   if (!user || isFetchingProfile) {
     return (
       <div className="container mx-auto px-4 py-8 pt-24 flex items-center justify-center">

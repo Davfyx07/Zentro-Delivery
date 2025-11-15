@@ -1,7 +1,5 @@
-"use client"
-
 import { useState } from "react"
-import { useAuth, type Address } from "@/hooks/use-auth"
+import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,13 +18,15 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, Plus, Edit2, Trash2, Check, Home } from "lucide-react"
+
 import { useToast } from "@/hooks/use-toast"
 
-export function AddressesManager() {
+export default function AddressesManager() {
   const { user, addAddress, updateAddress, deleteAddress, setDefaultAddress } = useAuth()
   const { toast } = useToast()
   const [isOpen, setIsOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     title: "",
     address: "",
@@ -34,10 +34,13 @@ export function AddressesManager() {
 
   const addresses = user?.addresses || []
 
-  const handleOpenDialog = (address?: Address) => {
-    if (address) {
+  const handleOpenDialog = (address?: any) => {
+    if (address && address.id) {
       setEditingId(address.id)
-      setFormData({ title: address.title, address: address.address })
+      setFormData({ 
+        title: address.title, 
+        address: address.address 
+      })
     } else {
       setEditingId(null)
       setFormData({ title: "", address: "" })
@@ -45,7 +48,8 @@ export function AddressesManager() {
     setIsOpen(true)
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // Validación
     if (!formData.title.trim() || !formData.address.trim()) {
       toast({
         title: "Error",
@@ -55,34 +59,91 @@ export function AddressesManager() {
       return
     }
 
-    if (editingId) {
-      updateAddress(editingId, {
-        title: formData.title,
-        address: formData.address,
-      })
-      toast({
-        title: "Dirección actualizada",
-        description: "Tu dirección se actualizó correctamente",
-      })
-    } else {
-      const newAddress = {
-        id:
-          typeof crypto !== "undefined" && typeof (crypto as any).randomUUID === "function"
-            ? (crypto as any).randomUUID()
-            : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        title: formData.title,
-        address: formData.address,
-        isDefault: addresses.length === 0,
+    setIsSubmitting(true)
+
+    try {
+      if (editingId) {
+        // Actualizar dirección existente
+        await updateAddress(editingId, {
+          title: formData.title.trim(),
+          address: formData.address.trim(),
+        })
+        
+        toast({
+          title: " Dirección actualizada",
+          description: "Tu dirección se actualizó correctamente",
+        })
+      } else {
+        // Crear nueva dirección
+        await addAddress({
+          title: formData.title.trim(),
+          address: formData.address.trim(),
+        } as any)
+        
+        toast({
+          title: "Dirección agregada",
+          description: "Nueva dirección guardada correctamente",
+        })
       }
-      addAddress(newAddress)
+
+      // Cerrar modal y limpiar formulario
+      setIsOpen(false)
+      setFormData({ title: "", address: "" })
+      setEditingId(null)
+    } catch (error: any) {
+      console.error("Error al guardar dirección:", error)
+      
+      // Mostrar mensaje de error específico
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data || 
+                          error.message || 
+                          "No se pudo guardar la dirección"
+      
       toast({
-        title: "Dirección agregada",
-        description: "Nueva dirección guardada correctamente",
+        title: "❌ Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSetDefault = async (id: string) => {
+    try {
+      await setDefaultAddress(id)
+      
+      const addr = addresses.find(a => a.id === id)
+      toast({
+        title: "✅ Dirección actualizada",
+        description: `${addr?.title} es ahora tu dirección principal`,
+      })
+    } catch (error: any) {
+      console.error("Error al establecer dirección predeterminada:", error)
+      toast({
+        title: "❌ Error",
+        description: error.message || "No se pudo actualizar la dirección",
+        variant: "destructive",
       })
     }
+  }
 
-    setIsOpen(false)
-    setFormData({ title: "", address: "" })
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteAddress(id)
+      
+      toast({
+        title: "🗑️ Dirección eliminada",
+        description: "Tu dirección se eliminó correctamente",
+      })
+    } catch (error: any) {
+      console.error("Error al eliminar dirección:", error)
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo eliminar la dirección",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
@@ -103,7 +164,9 @@ export function AddressesManager() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingId ? "Editar dirección" : "Agregar nueva dirección"}</DialogTitle>
+              <DialogTitle>
+                {editingId ? "Editar dirección" : "Agregar nueva dirección"}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-5">
               <div className="space-y-2">
@@ -112,10 +175,11 @@ export function AddressesManager() {
                 </Label>
                 <Input
                   id="title"
-                  placeholder="Ej: Casa, Trabajo, Apartamento, Otros"
+                  placeholder="Ej: Casa, Trabajo, Apartamento"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="rounded-mb"
+                  disabled={isSubmitting}
+                  className="rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -127,11 +191,23 @@ export function AddressesManager() {
                   placeholder="Calle, número, colonia, ciudad, código postal"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  disabled={isSubmitting}
                   className="w-full px-3 py-2 border border-border bg-background text-foreground h-20 resize-none rounded-md"
                 />
               </div>
-              <Button onClick={handleSubmit} className="w-full font-semibold rounded-md h-10 ">
-                {editingId ? "Actualizar" : "Agregar"} Dirección
+              <Button 
+                onClick={handleSubmit} 
+                disabled={isSubmitting}
+                className="w-full font-semibold rounded-md h-10"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <span className="animate-spin">⏳</span>
+                    Guardando...
+                  </span>
+                ) : (
+                  <>{editingId ? "Actualizar" : "Agregar"} Dirección</>
+                )}
               </Button>
             </div>
           </DialogContent>
@@ -198,14 +274,8 @@ export function AddressesManager() {
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={() => {
-                            deleteAddress(addr.id)
-                            toast({
-                              title: "Dirección eliminada",
-                              description: "Tu dirección se eliminó correctamente",
-                            })
-                          }}
-                          className="bg-destructive text-dialogs"
+                          onClick={() => addr.id && handleDelete(addr.id)}
+                          className="bg-destructive text-white"
                         >
                           Eliminar
                         </AlertDialogAction>
@@ -218,13 +288,7 @@ export function AddressesManager() {
                     variant="outline"
                     size="sm"
                     className="text-xs w-full bg-transparent rounded-md h-7 mt-2"
-                    onClick={() => {
-                      setDefaultAddress(addr.id)
-                      toast({
-                        title: "Dirección actualizada",
-                        description: `${addr.title} es ahora tu dirección principal`,
-                      })
-                    }}
+                    onClick={() => addr.id && handleSetDefault(addr.id)}
                   >
                     <Check className="w-3 h-3 mr-1" />
                     Por defecto
@@ -234,7 +298,7 @@ export function AddressesManager() {
             ))}
           </div>
         )}
-      </CardContent>
+    </CardContent>
     </Card>
   )
 }

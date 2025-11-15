@@ -38,14 +38,16 @@ public class AddressServiceImp implements AddressService {
             throw new Exception("User not found");
         }
 
+        // ✅ Establecer el usuario en la dirección
         address.setCustomer(user);
-        // Si es la primera dirección, hacerla default
+        
+        // ✅ Si es la primera dirección, hacerla default
         List<Address> existingAddresses = addressRepository.findByCustomerId(user.getId());
         if(existingAddresses.isEmpty()) {
             address.setIsDefault(true);
         }
 
-        // If the incoming address requests to be default, clear previous defaults
+        // Si la dirección nueva solicita ser default, limpiar las anteriores
         if (Boolean.TRUE.equals(address.getIsDefault())) {
             Optional<Address> prev = addressRepository.findByCustomerIdAndIsDefaultTrue(user.getId());
             if (prev.isPresent()) {

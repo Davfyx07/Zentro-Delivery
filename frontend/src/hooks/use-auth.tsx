@@ -174,30 +174,41 @@ export const useAuth = create<AuthState>()(
 
       // ---- DIRECCIONES MULTIPLES ----
       addAddress: async (address) => {
-        const user = get().user
-        if (!user) return
+      const user = get().user
+      if (!user) return
 
-        try {
-          //1. Llamar API para guardar dirección en BD
-          const res = await api.post('/api/addresses', address)
-          const saved = res.data //direccion con ID desde backend
-
-          //2. Actualizar estado local con estados del servidor
-          const updatedAddresses = [...(user.addresses || []), saved]
-          const updatedUser = { ...user, addresses: updatedAddresses }
-
-          //3. Guardar en local storage para persistencia
-          const users = getStoredUsers()
-          if (users[user.email]) {
-            users[user.email].user = updatedUser
-            saveStoredUsers(users)
-          }
-
-          set({ user: updatedUser })
-        } catch (error) {
-          console.error("Error al agregar dirección:", error)
-          throw error
+      try {
+        // ✅ Preparar payload limpio
+        const payload = {
+          title: address.title,
+          address: address.address,
         }
+
+        console.log('📤 Enviando dirección:', payload)
+
+        // ✅ Usar el cliente API con axios (incluye cookies automáticamente)
+        const res = await api.post('/api/addresses', payload)
+        
+        console.log('✅ Respuesta del backend:', res.data)
+        
+        const saved = res.data
+
+        const updatedAddresses = [...(user.addresses || []), saved]
+        const updatedUser = { ...user, addresses: updatedAddresses }
+
+        // Guardar en localStorage
+        const users = getStoredUsers()
+        if (users[user.email]) {
+          users[user.email].user = updatedUser
+          saveStoredUsers(users)
+        }
+
+        set({ user: updatedUser })
+      } catch (error: any) {
+        console.error("❌ Error al agregar dirección:", error)
+        console.error("❌ Detalles del error:", error.response?.data)
+        throw error
+      }
       },
 
       updateAddress: async (id, data) => {
