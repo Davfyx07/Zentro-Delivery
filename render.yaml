@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: zentro-backend
+    env: docker
+    branch: main
+    plan: free
+    dockerfilePath: backend/Dockerfile
+    healthCheckPath: /
+    # Environment variables required by the backend.
+    # NOTE: For secrets (DB password, Cloudinary secret) prefer to set them
+    # in the Render Dashboard (Service → Environment) rather than committing
+    # plaintext values here. Replace placeholder values below or leave them
+    # as placeholders and set real values in Render.
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        value: "<set-in-render>"
+      - key: SPRING_DATASOURCE_USERNAME
+        value: "<set-in-render>"
+      - key: SPRING_DATASOURCE_PASSWORD
+        value: "<set-in-render>"
+      - key: CLOUDINARY_API_KEY
+        value: "<set-in-render>"
+      - key: CLOUDINARY_API_SECRET
+        value: "<set-in-render>"
+      - key: FRONTEND_BASE_URL
+        value: "https://your-frontend.example.com"
