@@ -2,13 +2,13 @@
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# Copiar pom y wrapper para aprovechar cache
-COPY pom.xml ./
-COPY mvnw ./
-COPY .mvn .mvn
+# Copiar pom y wrapper para aprovechar cache (paths adjusted for repo root build context)
+COPY backend/pom.xml ./
+COPY backend/mvnw ./
+COPY backend/.mvn .mvn
 
 # Copiar código y compilar
-COPY src ./src
+COPY backend/src ./src
 RUN mvn -B -DskipTests package
 
 # Stage 2 — runtime con JRE 21
