@@ -31,7 +31,9 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v4
         with:
-          context: ./backend
+          # Use repository root as build context so Dockerfile can reference files
+          # using paths like backend/... (matches local build)
+          context: .
           file: ./backend/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
@@ -72,4 +74,6 @@ jobs:
             exit 0
           fi
           echo "Triggering Render deploy via webhook"
-          curl -s -X POST "${RENDER_DEPLOY_HOOK}" || true
+          # Show HTTP response code for easier debugging
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${RENDER_DEPLOY_HOOK}" ) || true
+          echo "Render webhook responded with HTTP status: ${HTTP_CODE}"
