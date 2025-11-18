@@ -159,13 +159,5 @@ npm run lint    # lint
 
 ---
 
-Si quieres, puedo además:
-- añadir un `docker-compose.yml` básico para la base de datos y la app
-- generar un `README` en inglés adicional o una versión corta para el README principal
-
-¿Quieres que agregue el `docker-compose` ahora? 
-
----
-
 © Davfyx07
 
