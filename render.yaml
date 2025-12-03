@@ -1,4 +1,7 @@
 services:
+  # --------------------------------------------------------------------------------
+  # BACKEND (Spring Boot + Docker)
+  # --------------------------------------------------------------------------------
   - type: web
     name: zentro-backend
     runtime: docker
@@ -6,3 +9,39 @@ services:
     plan: free
     dockerfilePath: backend/Dockerfile
     healthCheckPath: /
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+
+  # --------------------------------------------------------------------------------
+  # FRONTEND (Next.js + Node)
+  # --------------------------------------------------------------------------------
+  - type: web
+    name: zentro-frontend
+    runtime: node
+    branch: main
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: zentro-backend
+          property: url
