@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.config.JwtProvider;
 import com.model.Address;
+import com.model.User;
 import com.service.AddressService;
 
 import jakarta.servlet.http.Cookie;
@@ -30,44 +31,31 @@ public class AddressController {
     @Autowired
     private AddressService addressService;
 
-    @Autowired
-    private JwtProvider jwtProvider;
-
-    // ✅ Método helper para obtener email desde cookies
-    private String getEmailFromRequest(HttpServletRequest request) throws Exception {
-        String jwt = null;
-        
-        // Buscar cookie zentro_jwt
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("zentro_jwt".equals(cookie.getName())) {
-                    jwt = URLDecoder.decode(cookie.getValue(), StandardCharsets.UTF_8);
-                    break;
-                }
-            }
-        }
-        
-        if (jwt == null || jwt.isEmpty()) {
-            throw new Exception("Missing or invalid Authorization");
-        }
-        
-        // Agregar "Bearer " si no está presente
-        if (!jwt.startsWith("Bearer ")) {
-            jwt = "Bearer " + jwt;
-        }
-        
-        String email = jwtProvider.getEmailFromJwtToken(jwt);
+    // Helper simplificado usando SecurityContext
+    private User getAuthenticatedUser() throws Exception {
+        String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
+                .getName();
         if (email == null) {
-            throw new Exception("Invalid JWT token");
+            throw new Exception("User not authenticated");
         }
-        
-        return email;
+        // Asumiendo que tienes un método findUserByEmail en userService.
+        // Si no, inyéctalo: @Autowired private UserService userService;
+        // Pero AddressService ya tiene métodos que aceptan email? No, aceptan User o
+        // Email?
+        // Revisando el código original:
+        // addressService.getAddressesForUserByEmail(email)
+        return null; // No se usa, devolvemos email directo
+    }
+
+    private String getAuthenticatedEmail() {
+        return org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
+                .getName();
     }
 
     @GetMapping
-    public ResponseEntity<?> listAddresses(HttpServletRequest request) {
+    public ResponseEntity<?> listAddresses() {
         try {
-            String email = getEmailFromRequest(request);
+            String email = getAuthenticatedEmail();
             List<Address> list = addressService.getAddressesForUserByEmail(email);
             return ResponseEntity.ok(list);
         } catch (Exception e) {
@@ -76,23 +64,21 @@ public class AddressController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createAddress(HttpServletRequest request,
-            @RequestBody Address address) {
+    public ResponseEntity<?> createAddress(@RequestBody Address address) {
         try {
-            String email = getEmailFromRequest(request);
+            String email = getAuthenticatedEmail();
             Address created = addressService.addAddressForUserByEmail(email, address);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
         } catch (Exception e) {
-            e.printStackTrace(); // Para debugging
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateAddress(HttpServletRequest request,
-            @PathVariable Long id, @RequestBody Address address) {
+    public ResponseEntity<?> updateAddress(@PathVariable Long id, @RequestBody Address address) {
         try {
-            String email = getEmailFromRequest(request);
+            String email = getAuthenticatedEmail();
             Address updated = addressService.updateAddressForUserByEmail(email, id, address);
             return ResponseEntity.ok(updated);
         } catch (Exception e) {
@@ -101,10 +87,9 @@ public class AddressController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteAddress(HttpServletRequest request,
-            @PathVariable Long id) {
+    public ResponseEntity<?> deleteAddress(@PathVariable Long id) {
         try {
-            String email = getEmailFromRequest(request);
+            String email = getAuthenticatedEmail();
             addressService.deleteAddressForUserByEmail(email, id);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
@@ -113,10 +98,9 @@ public class AddressController {
     }
 
     @PostMapping("/{id}/default")
-    public ResponseEntity<?> setDefault(HttpServletRequest request,
-            @PathVariable Long id) {
+    public ResponseEntity<?> setDefault(@PathVariable Long id) {
         try {
-            String email = getEmailFromRequest(request);
+            String email = getAuthenticatedEmail();
             Address a = addressService.setDefaultAddressForUserByEmail(email, id);
             return ResponseEntity.ok(a);
         } catch (Exception e) {

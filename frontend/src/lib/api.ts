@@ -7,48 +7,14 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 export const api = axios.create({
   baseURL: API_URL,
   withCredentials: true, // Envía cookies automáticamente
-  headers: {
-    'Content-Type': 'application/json',
-  },
 })
-
-// Add response interceptor to handle auth errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Token expiró o es inválido
-      if (typeof window !== 'undefined') {
-        // Limpiar estado de autenticación
-        window.location.href = '/login'
-      }
-    }
-    return Promise.reject(error)
-  }
-)
-
-api.interceptors.request.use(
-  (config) => {
-    // NO agregues Authorization header aquí - el backend usa cookies
-    return config
-  },
-  (error) => Promise.reject(error)
-)
-
-// API endpoints matching backend
-export const authAPI = {
-  signup: (data: any) => api.post('/auth/signup', data),
-  signin: (data: any) => api.post('/auth/signin', data),
-  logout: () => api.post('/auth/logout'),
-  googleAuth: (data: any) => api.post('/auth/google', data),
-}
 
 export const restaurantAPI = {
   // Public endpoints
   getAll: () => api.get('/api/restaurants'),
   getById: (id: number) => api.get(`/api/restaurants/${id}`),
   search: (keyword: string) => api.get(`/api/restaurants/search?keyword=${keyword}`),
-  
+
   // Admin endpoints (owner)
   create: (data: any) => api.post('/api/admin/restaurants', data),
   update: (id: number, data: any) => api.put(`/api/admin/restaurants/${id}`, data),
@@ -59,10 +25,10 @@ export const restaurantAPI = {
 
 export const foodAPI = {
   // Public endpoints
-  getByRestaurant: (restaurantId: number, params?: any) => 
+  getByRestaurant: (restaurantId: number, params?: any) =>
     api.get(`/api/food/restaurant/${restaurantId}`, { params }),
   search: (keyword: string) => api.get(`/api/food/search?name=${keyword}`),
-  
+
   // Admin endpoints (owner)
   create: (data: any) => api.post('/api/admin/food', data),
   delete: (id: number) => api.delete(`/api/admin/food/${id}`),
@@ -81,11 +47,11 @@ export const orderAPI = {
   // Customer endpoints
   create: (data: any) => api.post('/api/order', data),
   getUserOrders: () => api.get('/api/order/user'),
-  
+
   // Admin endpoints (owner)
-  getRestaurantOrders: (restaurantId: number, status?: string) => 
+  getRestaurantOrders: (restaurantId: number, status?: string) =>
     api.get(`/api/admin/order/restaurant/${restaurantId}`, { params: { order_status: status } }),
-  updateStatus: (orderId: number, status: string) => 
+  updateStatus: (orderId: number, status: string) =>
     api.put(`/api/admin/order/${orderId}/${status}`),
 }
 
@@ -97,10 +63,10 @@ export const categoryAPI = {
 export const ingredientAPI = {
   createCategory: (data: any) => api.post('/api/admin/ingredients/category', data),
   createItem: (data: any) => api.post('/api/admin/ingredients', data),
-  updateStock: (id: number) => api.put(`/api/admin/ingredients/${id}/stoke`),
-  getCategories: (restaurantId: number) => 
+  updateStock: (id: number) => api.put(`/api/admin/ingredients/${id}/stock`),
+  getCategories: (restaurantId: number) =>
     api.get(`/api/admin/ingredients/restaurant/${restaurantId}/category`),
-  getItems: (restaurantId: number) => 
+  getItems: (restaurantId: number) =>
     api.get(`/api/admin/ingredients/restaurant/${restaurantId}/stock`),
 }
 

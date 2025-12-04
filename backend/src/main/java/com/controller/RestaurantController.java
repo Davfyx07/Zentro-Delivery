@@ -31,47 +31,39 @@ public class RestaurantController {
 
     @GetMapping("/search")
     public ResponseEntity<List<Restaurant>> searchRestaurants(
-        @RequestHeader("Authorization") String jwt,
-        @RequestParam String keyword
-    ) throws Exception{
-        User user = userService.findUserByJwtToken(jwt);
+            @RequestParam String keyword) throws Exception {
+        // No necesitamos el usuario para buscar, pero si lo necesitáramos:
+        // String email =
+        // SecurityContextHolder.getContext().getAuthentication().getName();
         List<Restaurant> restaurant = restaurantService.searchRestaurant(keyword);
         return new ResponseEntity<>(restaurant, HttpStatus.OK);
     }
 
     @GetMapping()
-    public ResponseEntity<List<Restaurant>> getAllRestaurant(
-        @RequestHeader("Authorization") String jwt
-
-    ) throws Exception{
-        User user = userService.findUserByJwtToken(jwt);
+    public ResponseEntity<List<Restaurant>> getAllRestaurant() throws Exception {
+        // Endpoint público o protegido por filtro, no necesita usuario explícito para
+        // listar
         List<Restaurant> restaurant = restaurantService.getAllRestaurant();
         return new ResponseEntity<>(restaurant, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Restaurant> findRestaurantById(
-        @RequestHeader("Authorization") String jwt,
-        @PathVariable Long id
-
-    ) throws Exception{
-        User user = userService.findUserByJwtToken(jwt);
+            @PathVariable Long id) throws Exception {
         Restaurant restaurant = restaurantService.findRestaurantByID(id);
         return new ResponseEntity<>(restaurant, HttpStatus.OK);
     }
 
     @PutMapping("/{id}/add-favorites")
     public ResponseEntity<RestaurantDto> addToFavorites(
-        @RequestHeader("Authorization") String jwt,
-        @PathVariable Long id
+            @PathVariable Long id) throws Exception {
+        // Obtener usuario del contexto de seguridad (seteado por JwtTokenValidator)
+        String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
+                .getName();
+        User user = userService.findUserByEmail(email);
 
-    ) throws Exception{
-        User user = userService.findUserByJwtToken(jwt);
         RestaurantDto restaurant = restaurantService.addToFavorite(id, user);
         return new ResponseEntity<>(restaurant, HttpStatus.OK);
     }
-
-
-
 
 }
