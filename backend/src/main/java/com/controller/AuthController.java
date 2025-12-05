@@ -204,75 +204,10 @@ public class AuthController {
 
                 return new ResponseEntity<>(authResponse, HttpStatus.CREATED);
             }
+                .maxAge(86400) // 1 día
+                .sameSite("None") // Necesario para Cross-Site (Vercel -> Render)
+                .build();
 
-        } catch (Exception e) {
-            AuthResponse authResponse = new AuthResponse();
-            authResponse.setMessage("Google authentication failed: " + e.getMessage());
-            return new ResponseEntity<>(authResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @PostMapping("/logout")
-    public ResponseEntity<MessageResponse> logout(HttpServletResponse response) {
-        // Eliminar la cookie
-        Cookie jwtCookie = new Cookie("zentro_jwt", null);
-        jwtCookie.setHttpOnly(true);
-        jwtCookie.setSecure(false);
-        jwtCookie.setPath("/");
-        jwtCookie.setMaxAge(0); // Expira inmediatamente
-        jwtCookie.setAttribute("SameSite", "Lax");
-        response.addCookie(jwtCookie);
-
-        // Limpiar el contexto de seguridad
-        SecurityContextHolder.clearContext();
-
-        MessageResponse res = new MessageResponse();
-        res.setMessage("Logged out successfully");
-        return ResponseEntity.ok(res);
-    }
-
-    private Authentication authenticate(String username, String password) {
-        UserDetails userDetails = customerUserDetailsService.loadUserByUsername(username);
-
-        if (userDetails == null) {
-            throw new BadCredentialsException("Invalid username");
-        }
-
-        User user = userRepository.findByEmail(username);
-        if (user != null && "GOOGLE".equals(user.getProvider())) {
-            throw new BadCredentialsException("This account uses Google Sign In. Please sign in with Google.");
-        }
-
-        if (!passwordEncoder.matches(password, userDetails.getPassword())) {
-            throw new BadCredentialsException("Invalid password");
-        }
-        return new UsernamePasswordAuthenticationToken(
-                userDetails,
-                null,
-                userDetails.getAuthorities());
-    }
-
-    // Método helper para establecer la cookie JWT (valor URL-encoded, sin prefijo
-    // 'Bearer ')
-    private void setJwtCookie(HttpServletResponse response, String jwt) {
-        Cookie jwtCookie = new Cookie("zentro_jwt", jwt); // SIN codificar
-        jwtCookie.setHttpOnly(true);
-        jwtCookie.setSecure(false); // false para desarrollo local
-        jwtCookie.setPath("/");
-        jwtCookie.setMaxAge(86400); // 1 día
-        jwtCookie.setAttribute("SameSite", "Lax"); // Cambia a Lax para desarrollo
-        response.addCookie(jwtCookie);
-    }
-
-    @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordRequest request) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-                .body("Funcionalidad de restablecer contraseña temporalmente deshabilitada");
-    }
-
-    @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword() {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-                .body("Funcionalidad de restablecer contraseña temporalmente deshabilitada");
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString());
     }
 }

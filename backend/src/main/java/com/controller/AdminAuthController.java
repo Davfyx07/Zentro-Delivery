@@ -107,12 +107,14 @@ public class AdminAuthController {
     }
 
     private void setJwtCookie(HttpServletResponse response, String jwt) {
-        Cookie jwtCookie = new Cookie("zentro_jwt", jwt);
-        jwtCookie.setHttpOnly(true);
-        jwtCookie.setSecure(false); // false para desarrollo local
-        jwtCookie.setPath("/");
-        jwtCookie.setMaxAge(86400); // 1 día
-        jwtCookie.setAttribute("SameSite", "Lax");
-        response.addCookie(jwtCookie);
+        org.springframework.http.ResponseCookie cookie = org.springframework.http.ResponseCookie.from("zentro_jwt", jwt)
+                .httpOnly(true)
+                .secure(true) // True es OBLIGATORIO para SameSite=None
+                .path("/")
+                .maxAge(86400) // 1 día
+                .sameSite("None") // Necesario para Cross-Site (Vercel -> Render)
+                .build();
+
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString());
     }
 }
