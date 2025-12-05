@@ -51,7 +51,7 @@ public class AuthController {
 
     @Autowired
     private CartRepository cartRepository;
-    
+
     @PostMapping("/signup")
     public ResponseEntity<AuthResponse> createUserHandler(@RequestBody User user, HttpServletResponse response) {
         User isEmailExist = userRepository.findByEmail(user.getEmail());
@@ -76,10 +76,10 @@ public class AuthController {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         String jwt = jwtProvider.generateToken(authentication);
-        
+
         // Establecer cookie HttpOnly
         setJwtCookie(response, jwt);
-        
+
         AuthResponse authResponse = new AuthResponse();
         authResponse.setMessage("User created successfully");
         authResponse.setRole(savedUser.getRole());
@@ -94,63 +94,80 @@ public class AuthController {
         String username = req.getEmail();
         String password = req.getPassword();
 
-        Authentication authentication = authenticate(username, password);
+        try {
+            Authentication authentication = authenticate(username, password);
 
-        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-        String role = authorities.isEmpty() ? null : authorities.iterator().next().getAuthority();
+            Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+            String role = authorities.isEmpty() ? null : authorities.iterator().next().getAuthority();
 
-        User user = userRepository.findByEmail(username);
+            User user = userRepository.findByEmail(username);
 
-        String jwt = jwtProvider.generateToken(authentication);
-        
-        // Establecer cookie HttpOnly
-        setJwtCookie(response, jwt);
+            String jwt = jwtProvider.generateToken(authentication);
 
-        AuthResponse authResponse = new AuthResponse();
-        authResponse.setMessage("User signed in successfully");
-        authResponse.setRole(USER_ROLE.valueOf(role));
-        authResponse.setFullName(user.getFullName());
-        authResponse.setEmail(user.getEmail());
+            // Establecer cookie HttpOnly
+            setJwtCookie(response, jwt);
 
-        return new ResponseEntity<>(authResponse, HttpStatus.OK);
+            AuthResponse authResponse = new AuthResponse();
+            authResponse.setMessage("User signed in successfully");
+            authResponse.setRole(USER_ROLE.valueOf(role));
+            authResponse.setFullName(user.getFullName());
+            authResponse.setEmail(user.getEmail());
+
+            return new ResponseEntity<>(authResponse, HttpStatus.OK);
+
+        } catch (BadCredentialsException e) {
+            AuthResponse authResponse = new AuthResponse();
+            authResponse.setMessage("Invalid username or password");
+            return new ResponseEntity<>(authResponse, HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            AuthResponse authResponse = new AuthResponse();
+            authResponse.setMessage("Error during login: " + e.getMessage());
+            return new ResponseEntity<>(authResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @PostMapping("/google")
     public ResponseEntity<AuthResponse> googleAuth(@RequestBody GoogleAuthRequest req, HttpServletResponse response) {
         try {
             User existingUser = userRepository.findByEmail(req.getEmail());
-            
+
             if (existingUser != null) {
                 if (!"GOOGLE".equals(existingUser.getProvider())) {
-                    throw new RuntimeException("Email already registered with email/password. Please use regular login.");
+                    // Retornar error específico en lugar de lanzar excepción que causa 403
+                    AuthResponse authResponse = new AuthResponse();
+                    authResponse.setMessage("Email already registered with email/password. Please use regular login.");
+                    return new ResponseEntity<>(authResponse, HttpStatus.CONFLICT);
                 }
-                
+
                 if (req.getProfileImage() != null && !req.getProfileImage().equals(existingUser.getProfileImage())) {
                     existingUser.setProfileImage(req.getProfileImage());
                     userRepository.save(existingUser);
                 }
-                
+
                 Authentication authentication = new UsernamePasswordAuthenticationToken(
-                    existingUser.getEmail(), 
-                    null, 
-                    existingUser.getRole() == USER_ROLE.ROLE_CUSTOMER 
-                        ? java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_CUSTOMER"))
-                        : java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_RESTAURANT_OWNER"))
-                );
-                
+                        existingUser.getEmail(),
+                        null,
+                        existingUser.getRole() == USER_ROLE.ROLE_CUSTOMER
+                                ? java.util.Collections.singletonList(
+                                        new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                                                "ROLE_CUSTOMER"))
+                                : java.util.Collections.singletonList(
+                                        new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                                                "ROLE_RESTAURANT_OWNER")));
+
                 String jwt = jwtProvider.generateToken(authentication);
-                
+
                 // Establecer cookie HttpOnly
-                    setJwtCookie(response, jwt);
-                
+                setJwtCookie(response, jwt);
+
                 AuthResponse authResponse = new AuthResponse();
                 authResponse.setMessage("Google sign in successful");
                 authResponse.setRole(existingUser.getRole());
                 authResponse.setFullName(existingUser.getFullName());
                 authResponse.setEmail(existingUser.getEmail());
-                
+
                 return new ResponseEntity<>(authResponse, HttpStatus.OK);
-                
+
             } else {
                 User newUser = new User();
                 newUser.setEmail(req.getEmail());
@@ -160,41 +177,44 @@ public class AuthController {
                 newUser.setProfileImage(req.getProfileImage());
                 newUser.setRole(USER_ROLE.ROLE_CUSTOMER);
                 newUser.setPassword(null);
-                
+
                 User savedUser = userRepository.save(newUser);
-                
+
                 Cart cart = new Cart();
                 cart.setCustomer(savedUser);
                 cartRepository.save(cart);
-                
+
                 Authentication authentication = new UsernamePasswordAuthenticationToken(
-                    savedUser.getEmail(), 
-                    null,
-                    java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_CUSTOMER"))
-                );
-                
+                        savedUser.getEmail(),
+                        null,
+                        java.util.Collections
+                                .singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                                        "ROLE_CUSTOMER")));
+
                 String jwt = jwtProvider.generateToken(authentication);
-                
+
                 // Establecer cookie HttpOnly
                 setJwtCookie(response, jwt);
-                
+
                 AuthResponse authResponse = new AuthResponse();
                 authResponse.setMessage("Google account created successfully");
                 authResponse.setRole(savedUser.getRole());
                 authResponse.setFullName(savedUser.getFullName());
                 authResponse.setEmail(savedUser.getEmail());
-                
+
                 return new ResponseEntity<>(authResponse, HttpStatus.CREATED);
             }
-            
+
         } catch (Exception e) {
-            throw new RuntimeException("Google authentication failed: " + e.getMessage());
+            AuthResponse authResponse = new AuthResponse();
+            authResponse.setMessage("Google authentication failed: " + e.getMessage());
+            return new ResponseEntity<>(authResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @PostMapping("/logout")
     public ResponseEntity<MessageResponse> logout(HttpServletResponse response) {
-    // Eliminar la cookie
+        // Eliminar la cookie
         Cookie jwtCookie = new Cookie("zentro_jwt", null);
         jwtCookie.setHttpOnly(true);
         jwtCookie.setSecure(false);
@@ -202,10 +222,10 @@ public class AuthController {
         jwtCookie.setMaxAge(0); // Expira inmediatamente
         jwtCookie.setAttribute("SameSite", "Lax");
         response.addCookie(jwtCookie);
-        
+
         // Limpiar el contexto de seguridad
         SecurityContextHolder.clearContext();
-        
+
         MessageResponse res = new MessageResponse();
         res.setMessage("Logged out successfully");
         return ResponseEntity.ok(res);
@@ -214,26 +234,26 @@ public class AuthController {
     private Authentication authenticate(String username, String password) {
         UserDetails userDetails = customerUserDetailsService.loadUserByUsername(username);
 
-        if(userDetails == null) {
+        if (userDetails == null) {
             throw new BadCredentialsException("Invalid username");
         }
-        
+
         User user = userRepository.findByEmail(username);
-        if(user != null && "GOOGLE".equals(user.getProvider())) {
+        if (user != null && "GOOGLE".equals(user.getProvider())) {
             throw new BadCredentialsException("This account uses Google Sign In. Please sign in with Google.");
         }
-        
-        if(!passwordEncoder.matches(password, userDetails.getPassword())) {
+
+        if (!passwordEncoder.matches(password, userDetails.getPassword())) {
             throw new BadCredentialsException("Invalid password");
         }
         return new UsernamePasswordAuthenticationToken(
                 userDetails,
                 null,
-                userDetails.getAuthorities()
-        );
+                userDetails.getAuthorities());
     }
 
-    // Método helper para establecer la cookie JWT (valor URL-encoded, sin prefijo 'Bearer ')
+    // Método helper para establecer la cookie JWT (valor URL-encoded, sin prefijo
+    // 'Bearer ')
     private void setJwtCookie(HttpServletResponse response, String jwt) {
         Cookie jwtCookie = new Cookie("zentro_jwt", jwt); // SIN codificar
         jwtCookie.setHttpOnly(true);
@@ -247,12 +267,12 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordRequest request) {
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-            .body("Funcionalidad de restablecer contraseña temporalmente deshabilitada");
+                .body("Funcionalidad de restablecer contraseña temporalmente deshabilitada");
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<String> resetPassword() {
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-            .body("Funcionalidad de restablecer contraseña temporalmente deshabilitada");
+                .body("Funcionalidad de restablecer contraseña temporalmente deshabilitada");
     }
 }
