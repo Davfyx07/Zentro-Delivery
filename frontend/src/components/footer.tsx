@@ -7,7 +7,7 @@ export function Footer() {
         <div className="flex flex-col items-center gap-6">
           {/* Text */}
           <div className="text-center">
-            <p className="text-muted-foreground dark:text-gray-400">© 2025 Zentro Restaurant — Desarrollado por Juan David Lozano</p>
+            <p className="text-muted-foreground dark:text-gray-400">© 2025 Zentro Delivery — Desarrollado por Juan David Lozano</p>
           </div>
 
           {/* Social Links */}

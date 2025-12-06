@@ -174,7 +174,13 @@ export default function AdminLoginPage() {
                         </Button>
                     </form>
 
-                    <div className="mt-8 text-center">
+                    <div className="mt-8 text-center space-y-4">
+                        <p className="text-sm text-muted-foreground dark:text-gray-400">
+                            ¿Quieres registrar tu restaurante?{" "}
+                            <Link href="/admin/signup" className="font-semibold text-primary hover:underline">
+                                Únete como socio
+                            </Link>
+                        </p>
                         <p className="text-xs text-muted-foreground">
                             Este es un sistema restringido. Cualquier acceso no autorizado será monitoreado.
                         </p>

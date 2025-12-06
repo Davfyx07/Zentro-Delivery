@@ -33,12 +33,12 @@ export interface AuthState {
   isInitialized: boolean
   initialize: () => Promise<void>
   login: (email: string, password: string) => Promise<boolean>
-  signup: (email: string, password: string, name: string) => boolean
+  signup: (email: string, password: string, name: string, role?: string) => Promise<boolean>
   logout: () => void
   updateProfile: (data: Partial<User>) => void
   updateProfileImage: (imageUrl: string) => void
   setUser: (user: User) => void
-  
+
   // NUEVAS FUNCIONES DE DIRECCIONES:
   addAddress: (address: Address) => void
   updateAddress: (id: string, data: Partial<Address>) => void
@@ -90,8 +90,8 @@ export const useAuth = create<AuthState>()(
       initialize: async () => {
         if (get().isInitialized) return
 
-        set ({ isLoading: true })
-        try{
+        set({ isLoading: true })
+        try {
           const res = await api.get('/api/users/profile')
           const data = res.data
 
@@ -108,30 +108,39 @@ export const useAuth = create<AuthState>()(
 
           set({ user: loadedUser, isInitialized: true })
 
-        }catch(error){
+        } catch (error) {
           console.error("No authenticated session found", error)
           set({ user: null, isInitialized: true })
-        } finally{
-          set ({ isLoading: false })
+        } finally {
+          set({ isLoading: false })
         }
       },
 
-      signup: (email, password, name) => {
-        const users = getStoredUsers()
-        if (users[email]) return false // Usuario ya existe
+      signup: async (email, password, name, role = "ROLE_CUSTOMER") => {
+        try {
+          const res = await api.post('/auth/signup', {
+            email,
+            password,
+            fullName: name,
+            role
+          })
 
-        const newUser: User = {
-          id: Math.random().toString(36).substr(2, 9),
-          email,
-          name,
-          role: "customer",
-          addresses: [], // Inicializa las direcciones vacías
-          createdAt: new Date().toISOString(),
+          const data = res.data
+          const newUser: User = {
+            id: data.email,
+            email: data.email,
+            name: data.fullName,
+            role: data.role === 'ROLE_CUSTOMER' ? 'customer' : 'owner',
+            createdAt: new Date().toISOString(),
+          }
+
+          // No necesitamos guardar en localStorage manual, el backend maneja la sesión/cookie
+          set({ user: newUser, isInitialized: true })
+          return true
+        } catch (error: any) {
+          console.error("Signup failed:", error)
+          throw new Error(error?.response?.data?.message || "Error al registrarse")
         }
-        users[email] = { password, user: newUser }
-        saveStoredUsers(users)
-        set({ user: newUser })
-        return true
       },
 
       logout: async () => {
@@ -174,41 +183,41 @@ export const useAuth = create<AuthState>()(
 
       // ---- DIRECCIONES MULTIPLES ----
       addAddress: async (address) => {
-      const user = get().user
-      if (!user) return
+        const user = get().user
+        if (!user) return
 
-      try {
-        // ✅ Preparar payload limpio
-        const payload = {
-          title: address.title,
-          address: address.address,
+        try {
+          // ✅ Preparar payload limpio
+          const payload = {
+            title: address.title,
+            address: address.address,
+          }
+
+          console.log('📤 Enviando dirección:', payload)
+
+          // ✅ Usar el cliente API con axios (incluye cookies automáticamente)
+          const res = await api.post('/api/addresses', payload)
+
+          console.log('✅ Respuesta del backend:', res.data)
+
+          const saved = res.data
+
+          const updatedAddresses = [...(user.addresses || []), saved]
+          const updatedUser = { ...user, addresses: updatedAddresses }
+
+          // Guardar en localStorage
+          const users = getStoredUsers()
+          if (users[user.email]) {
+            users[user.email].user = updatedUser
+            saveStoredUsers(users)
+          }
+
+          set({ user: updatedUser })
+        } catch (error: any) {
+          console.error("❌ Error al agregar dirección:", error)
+          console.error("❌ Detalles del error:", error.response?.data)
+          throw error
         }
-
-        console.log('📤 Enviando dirección:', payload)
-
-        // ✅ Usar el cliente API con axios (incluye cookies automáticamente)
-        const res = await api.post('/api/addresses', payload)
-        
-        console.log('✅ Respuesta del backend:', res.data)
-        
-        const saved = res.data
-
-        const updatedAddresses = [...(user.addresses || []), saved]
-        const updatedUser = { ...user, addresses: updatedAddresses }
-
-        // Guardar en localStorage
-        const users = getStoredUsers()
-        if (users[user.email]) {
-          users[user.email].user = updatedUser
-          saveStoredUsers(users)
-        }
-
-        set({ user: updatedUser })
-      } catch (error: any) {
-        console.error("❌ Error al agregar dirección:", error)
-        console.error("❌ Detalles del error:", error.response?.data)
-        throw error
-      }
       },
 
       updateAddress: async (id, data) => {
