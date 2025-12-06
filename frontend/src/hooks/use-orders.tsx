@@ -46,6 +46,7 @@ export const useOrders = create<OrdersState>()(
     }),
     {
       name: "zentro_orders",
+      skipHydration: true,
     },
   ),
 )

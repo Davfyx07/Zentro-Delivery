@@ -60,6 +60,7 @@ export const useCart = create<CartState>()(
     }),
     {
       name: "zentro_cart",
+      skipHydration: true,
     },
   ),
 )
