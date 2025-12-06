@@ -1,6 +1,8 @@
 package com.controller;
 
 import java.util.Collection;
+import java.util.UUID;
+import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,18 +21,21 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.config.JwtProvider;
 import com.model.Cart;
+import com.model.PasswordResetToken;
 import com.model.USER_ROLE;
 import com.model.User;
 import com.repository.CartRepository;
+import com.repository.PasswordResetTokenRepository;
 import com.repository.UserRepository;
 import com.request.ForgotPasswordRequest;
 import com.request.GoogleAuthRequest;
 import com.request.LoginRequest;
+import com.request.ResetPasswordRequest;
 import com.response.AuthResponse;
 import com.response.MessageResponse;
 import com.service.CustomerUserDetailsService;
+import com.service.EmailService;
 
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
@@ -52,6 +57,13 @@ public class AuthController {
     @Autowired
     private CartRepository cartRepository;
 
+    @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Autowired
+    private EmailService emailService;
+
+    // 📝 Registro de nuevo usuario
     @PostMapping("/signup")
     public ResponseEntity<AuthResponse> createUserHandler(@RequestBody User user, HttpServletResponse response) {
         User isEmailExist = userRepository.findByEmail(user.getEmail());
@@ -89,6 +101,7 @@ public class AuthController {
         return new ResponseEntity<>(authResponse, HttpStatus.CREATED);
     }
 
+    // 🔑 Inicio de sesión con email y contraseña
     @PostMapping("/signin")
     public ResponseEntity<AuthResponse> signin(@RequestBody LoginRequest req, HttpServletResponse response) {
         String username = req.getEmail();
@@ -126,6 +139,7 @@ public class AuthController {
         }
     }
 
+    // 🌐 Inicio de sesión con Google
     @PostMapping("/google")
     public ResponseEntity<AuthResponse> googleAuth(@RequestBody GoogleAuthRequest req, HttpServletResponse response) {
         try {
@@ -212,6 +226,7 @@ public class AuthController {
         }
     }
 
+    // 🚪 Cerrar sesión
     @PostMapping("/logout")
     public ResponseEntity<MessageResponse> logout(HttpServletResponse response) {
         // Eliminar la cookie con los mismos atributos que al crearla
@@ -233,18 +248,81 @@ public class AuthController {
         return ResponseEntity.ok(res);
     }
 
+    // 📧 Endpoint para solicitar recuperación de contraseña
     @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordRequest request) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-                .body("Funcionalidad de restablecer contraseña temporalmente deshabilitada");
+    public ResponseEntity<MessageResponse> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        try {
+            // 1. Buscar usuario por email
+            User user = userRepository.findByEmail(request.getEmail());
+
+            // 🔍 Si no existe, retornamos OK por seguridad (para no revelar emails
+            // registrados)
+            if (user == null) {
+                return ResponseEntity.ok(new MessageResponse("Si el correo existe, se ha enviado un enlace."));
+            }
+
+            // 2. Generar token único
+            String token = UUID.randomUUID().toString();
+
+            // 3. Guardar token en base de datos
+            // Primero borramos tokens anteriores del usuario si existen
+            passwordResetTokenRepository.deleteByUserId(user.getId());
+
+            PasswordResetToken resetToken = new PasswordResetToken();
+            resetToken.setToken(token);
+            resetToken.setUser(user);
+            resetToken.setExpiryDate(LocalDateTime.now().plusMinutes(10)); // ⏳ Expira en 10 min
+            passwordResetTokenRepository.save(resetToken);
+
+            // 4. Enviar email
+            emailService.sendPasswordResetEmail(user.getEmail(), token);
+
+            return ResponseEntity.ok(new MessageResponse("Si el correo existe, se ha enviado un enlace."));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Error al procesar la solicitud"));
+        }
     }
 
+    // 🔐 Endpoint para establecer la nueva contraseña
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword() {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-                .body("Funcionalidad de restablecer contraseña temporalmente deshabilitada");
+    public ResponseEntity<MessageResponse> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            // 1. Buscar el token en la BD
+            PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(request.getToken())
+                    .orElse(null);
+
+            // 🚫 Validar si el token existe
+            if (resetToken == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new MessageResponse("Token inválido o expirado"));
+            }
+
+            // ⏳ Validar si ha expirado
+            if (resetToken.isExpired()) {
+                passwordResetTokenRepository.delete(resetToken); // Limpiar token expirado
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new MessageResponse("El token ha expirado"));
+            }
+
+            // 2. Actualizar contraseña del usuario
+            User user = resetToken.getUser();
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            userRepository.save(user);
+
+            // 3. Borrar el token usado
+            passwordResetTokenRepository.delete(resetToken);
+
+            return ResponseEntity.ok(new MessageResponse("Contraseña actualizada correctamente"));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Error al actualizar la contraseña"));
+        }
     }
 
+    // 🕵️‍♂️ Método helper para autenticación
     private Authentication authenticate(String username, String password) {
         UserDetails userDetails = customerUserDetailsService.loadUserByUsername(username);
 
@@ -266,7 +344,7 @@ public class AuthController {
                 userDetails.getAuthorities());
     }
 
-    // Método helper para establecer la cookie JWT
+    // 🍪 Método helper para establecer la cookie JWT
     private void setJwtCookie(HttpServletResponse response, String jwt) {
         org.springframework.http.ResponseCookie cookie = org.springframework.http.ResponseCookie.from("zentro_jwt", jwt)
                 .httpOnly(true)

@@ -35,7 +35,7 @@ export default function LoginPage() {
     try {
       // La cookie se establece automáticamente por el backend
       await login(email, password)
-      
+
       // Redirigir al home
       router.push("/")
       router.refresh()
@@ -93,8 +93,8 @@ export default function LoginPage() {
       {/* Right Side - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-8 bg-background dark:bg-gray-900">
         <div className="w-full max-w-md">
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="inline-flex items-center gap-2 text-foreground dark:text-white hover:text-primary mb-6 transition-colors group"
           >
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
@@ -161,7 +161,12 @@ export default function LoginPage() {
               </div>
 
               <div className="text-right mt-1">
-                <p className="text-sm text-muted-foreground">¿Olvidaste tu contraseña? Actualmente esta funcionalidad está temporalmente deshabilitada.</p>
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-primary hover:underline font-medium"
+                >
+                  ¿Olvidaste tu contraseña?
+                </Link>
               </div>
             </div>
 
@@ -187,7 +192,7 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-border dark:bg-gray-700"></div>
           </div>
 
-          <GoogleSignInButton 
+          <GoogleSignInButton
             onSuccess={() => router.push("/")}
             onError={(error) => setError(error)}
           />

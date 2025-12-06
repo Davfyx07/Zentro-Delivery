@@ -156,6 +156,14 @@ export default function AdminLoginPage() {
                                     )}
                                 </Button>
                             </div>
+                            <div className="text-right mt-1">
+                                <Link
+                                    href="/forgot-password"
+                                    className="text-xs text-primary hover:underline font-medium"
+                                >
+                                    ¿Olvidaste tu contraseña?
+                                </Link>
+                            </div>
                         </div>
 
                         {error && (
