@@ -5,13 +5,13 @@ import { Navbar } from "./navbar"
 
 export function ConditionalNavbar() {
   const pathname = usePathname()
-  
-  // No mostrar el navbar en páginas de autenticación
-  const hideNavbar = pathname === "/login" || pathname === "/signup"
-  
+
+  // No mostrar el navbar en páginas de autenticación o admin
+  const hideNavbar = pathname === "/login" || pathname === "/signup" || pathname?.startsWith("/admin")
+
   if (hideNavbar) {
     return null
   }
-  
+
   return <Navbar />
 }
