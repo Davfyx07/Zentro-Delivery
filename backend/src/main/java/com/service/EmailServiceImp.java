@@ -23,6 +23,9 @@ public class EmailServiceImp implements EmailService {
             helper.setSubject("🔐 Recupera tu contraseña - Zentro Delivery");
 
             String resetLink = "https://zentro-delivery.vercel.app/reset-password?token=" + resetToken;
+            System.out.println("🔗 ENLACE DE RECUPERACIÓN (Para pruebas locales usa este token): " + resetToken);
+            System.out.println(
+                    "🔗 O abre esto en tu navegador local: http://localhost:3000/reset-password?token=" + resetToken);
 
             String htmlContent = "<div style='font-family: Arial, sans-serif; padding: 20px; color: #333;'>"
                     + "<h2>Recuperación de Contraseña</h2>"
@@ -43,8 +46,8 @@ public class EmailServiceImp implements EmailService {
             System.out.println("Email sent successfully to: " + toEmail);
 
         } catch (MessagingException e) {
-            System.err.println("Failed to send email: " + e.getMessage());
-            throw new RuntimeException("Failed to send password reset email");
+            e.printStackTrace(); // Imprimir stack trace completo en consola backend
+            throw new RuntimeException("Error enviando email: " + e.getMessage());
         }
     }
 }

@@ -280,8 +280,9 @@ public class AuthController {
             return ResponseEntity.ok(new MessageResponse("Si el correo existe, se ha enviado un enlace."));
 
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MessageResponse("Error al procesar la solicitud"));
+                    .body(new MessageResponse(e.getMessage()));
         }
     }
 
